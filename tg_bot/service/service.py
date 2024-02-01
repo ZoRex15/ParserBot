@@ -23,7 +23,7 @@ class Database:
 
     @classmethod
     def get_filters(cls, user_id: int, setting_name: str):
-        with sqlite3.connect('database.db') as connect:
+        with sqlite3.connect(cls.__DATABASE) as connect:
             cursor = connect.cursor()
             cursor.execute(
                 'SELECT filter FROM Filters WHERE user_id = ? AND setting_id = (SELECT id FROM Settings WHERE name = ?)', (user_id, setting_name))
@@ -34,7 +34,7 @@ class Database:
     
     @classmethod
     def clear_filters(cls, user_id: int, setting_id: str):
-        with sqlite3.connect('database.db') as connect:
+        with sqlite3.connect(cls.__DATABASE) as connect:
             cursor = connect.cursor()
             cursor.execute('DELETE FROM Filters WHERE user_id = ? AND setting_id = ?', (user_id, int(setting_id)))
 
@@ -42,10 +42,10 @@ class Database:
     def get_all_filters(cls, user_id: int, mode: str = 'name'):
         data = {'settings': ''}
         parser_settings = {}
-        with sqlite3.connect('database.db') as connect:
+        with sqlite3.connect(cls.__DATABASE) as connect:
             cursor = connect.cursor()
             if mode == 'name':
-                with sqlite3.connect('database.db') as connect:
+                with sqlite3.connect() as connect:
                     cursor = connect.cursor()
                     cursor.execute('SELECT id, name FROM Settings')
                     for i in cursor.fetchall():
@@ -57,7 +57,7 @@ class Database:
                             data['settings'] += f'{i[1]}: {[j[0] for j in result]}\n'
                 return data
             if mode == 'id':
-                with sqlite3.connect('database.db') as connect:
+                with sqlite3.connect(cls.__DATABASE) as connect:
                     cursor = connect.cursor()
                     cursor.execute('SELECT id, name FROM Settings')
                     for i in cursor.fetchall():
