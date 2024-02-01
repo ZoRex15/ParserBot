@@ -195,6 +195,7 @@ def parser(user_id: int, status: list = [],zayvitel: list = [],tech_reg: list = 
             proxi = next(proxy)
             proxy_ye = dict(http=f'socks5://{proxi}',
                             https=f'socks5://{proxi}')
+            print(f"Делаем поисковой запрос с этим прокси {proxy_ye}")
             response = requests.post(
                     'https://pub.fsa.gov.ru/api/v1/rds/common/declarations/get',
                     headers=headers,
@@ -209,6 +210,7 @@ def parser(user_id: int, status: list = [],zayvitel: list = [],tech_reg: list = 
             time.sleep(1)
             print(ex)
             print('error у поискового запроса')
+            print(f'Какой прокси используем {proxy_ye}')
     flattens = []
     def start(item):
         break_count = 0
