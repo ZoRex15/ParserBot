@@ -14,6 +14,7 @@ import concurrent.futures
 from selenium.webdriver.chrome.service import Service
 from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.service import Service as ChromiumService
 
 
 
@@ -69,17 +70,12 @@ def parser(user_id: int, status: list = [],zayvitel: list = [],tech_reg: list = 
         proxyy_ = file.readlines()[-1].strip()
     token = ''
     def get_token():
-        proxy_options = {'proxy': {
-            'http': f'http://{proxyy_}',
-            'https': f'https://{proxyy_}'
-        }}
+        print('запустили селениум')
         service = Service()
         start = time.perf_counter()
         while True:
-            try:
-                chrome_options = Options()
-                сhrome_options.add_argument("--headless")
-                with webdriver.Chrome(service=service, options=chrome_options) as driver:
+            try: 
+                with webdriver.Chrome(service=service) as driver:
                     driver.get("https://pub.fsa.gov.ru/rds/declaration")
                     time.sleep(3)
                     token = driver.execute_script("return localStorage.getItem('fgis_token');")
@@ -87,12 +83,11 @@ def parser(user_id: int, status: list = [],zayvitel: list = [],tech_reg: list = 
                         driver.close()
                         print(time.perf_counter() - start)
                         return token
-        
                         break
                     driver.close()
-            except:
-                print("Ошибка в драйвере")
-                time.sleep(1)
+            except Exception as error:
+                print(100)
+                print(f"Ошибка: {error}")
 
     token = get_token()
 
