@@ -12,6 +12,9 @@ import xlsxwriter
 import urllib3
 import concurrent.futures
 from selenium.webdriver.chrome.service import Service
+from selenium import webdriver
+from webdriver_manager.chrome import ChromeDriverManager
+
 
 
 urllib3.disable_warnings()
@@ -72,11 +75,10 @@ def parser(user_id: int, status: list = [],zayvitel: list = [],tech_reg: list = 
         }}
         service = Service()
         start = time.perf_counter()
-        chrome_options = None
         while True:
             try:
-                chrome_options: Options = Options()
-                chrome_options.add_argument("--headless")
+                chrome_options = Options()
+                сhrome_options.add_argument("--headless")
                 with webdriver.Chrome(service=service, options=chrome_options) as driver:
                     driver.get("https://pub.fsa.gov.ru/rds/declaration")
                     time.sleep(3)
@@ -457,10 +459,6 @@ def parser(user_id: int, status: list = [],zayvitel: list = [],tech_reg: list = 
     workbook.close()
 
     return f"output{user_id}.xlsx"
-
-
-
-
 
 
 
