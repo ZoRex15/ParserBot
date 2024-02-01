@@ -1,7 +1,9 @@
 import datetime
 import requests
 from requests import Session
+from selenium.webdriver.chrome.options import Options
 from selenium import webdriver
+import undetected_chromedriver as uc
 import time
 from anti_useragent import UserAgent
 import json
@@ -10,7 +12,7 @@ import xlsxwriter
 import urllib3
 import concurrent.futures
 from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
+
 
 urllib3.disable_warnings()
 c = 0
@@ -70,9 +72,12 @@ def parser(user_id: int, status: list = [],zayvitel: list = [],tech_reg: list = 
         }}
         service = Service()
         start = time.perf_counter()
+        chrome_options = None
         while True:
             try:
-                with webdriver.Chrome(service=service) as driver:
+                chrome_options: Options = Options()
+                chrome_options.add_argument("--headless")
+                with webdriver.Chrome(service=service, options=chrome_options) as driver:
                     driver.get("https://pub.fsa.gov.ru/rds/declaration")
                     time.sleep(3)
                     token = driver.execute_script("return localStorage.getItem('fgis_token');")
@@ -80,11 +85,11 @@ def parser(user_id: int, status: list = [],zayvitel: list = [],tech_reg: list = 
                         driver.close()
                         print(time.perf_counter() - start)
                         return token
-                    
+        
                         break
                     driver.close()
             except:
-                driver.close()
+                print("Ошибка в драйвере")
                 time.sleep(1)
 
     token = get_token()
