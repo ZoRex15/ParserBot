@@ -15,6 +15,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service as ChromiumService
+from itertools import cycle
 
 
 
@@ -66,8 +67,6 @@ for key, value in dct_country_.items():
 
 def parser(user_id: int, status: list = [],zayvitel: list = [],tech_reg: list = [],type_decl: list = [],type_obj_decl: list = [],proizhodenie_product: list = [],edini_perechen_product_eaes: list = [],
            edini_perechen_product_rf:list = [],reg_date_min: str = '',reg_date_max: str = '',end_date_min: str = '',end_date_max: str = '',group_product_rf: list = [],group_product_eaes: list = []):
-    with open('tg_bot/parser/proxy.txt','r',encoding='utf-8') as file:
-        proxyy_ = file.readlines()[-1].strip()
     token = ''
     def get_token():
         print('запустили селениум')
@@ -186,24 +185,28 @@ def parser(user_id: int, status: list = [],zayvitel: list = [],tech_reg: list = 
     json_data['filter']['endDate']['minDate'] = end_date_min
     json_data['filter']['endDate']['maxDate'] = end_date_max
     with open('tg_bot/parser/proxy.txt','r',encoding='utf-8') as file:
-        proxyy_ = file.readlines()[-1].strip()
-    proxy = dict(http=proxyy_,
-                 https=proxyy_)
+        proxyy_ = list(map(lambda x: x.strip(), file.readlines()[1:]))
+    proxy = cycle(proxyy_)
 
     ua = UserAgent()
     headers['User-Agent'] = ua.random
     while True:
         try:
+            proxi = next(proxy)
+            proxy_ye = dict(http=f'socks5://{proxi}',
+                            https=f'socks5://{proxi}')
             response = requests.post(
                     'https://pub.fsa.gov.ru/api/v1/rds/common/declarations/get',
                     headers=headers,
                     json=json_data,
-                proxies=proxy,verify=False
+                proxies=proxy_ye,verify=False
             )
             print('Поисковой запрос',response)
             items = response.json().get('items')
             break
         except Exception as ex:
+            proxi = next(proxy)
+            time.sleep(1)
             print(ex)
             print('error у поискового запроса')
     flattens = []
@@ -212,6 +215,9 @@ def parser(user_id: int, status: list = [],zayvitel: list = [],tech_reg: list = 
         global c
         while True:
             try:
+                proxi = next(proxy)
+                proxy_ye = dict(http=f'socks5://{proxi}',
+                                https=f'socks5://{proxi}')
                 json_data_mult = {
                     'items': {
                         'validationScheme2': [
@@ -273,7 +279,7 @@ def parser(user_id: int, status: list = [],zayvitel: list = [],tech_reg: list = 
                 ddr = item.get('declDate') # Дата регистрации декларации
                 ddre = item.get('declEndDate') # Дата окончания действия декларации о соответствии
                 headers['User-Agent'] = ua.random
-                resp = requests.get(f'https://pub.fsa.gov.ru/api/v1/rds/common/declarations/{id}',headers=headers,verify=False,proxies=proxy) # Делаем запрос к продукту
+                resp = requests.get(f'https://pub.fsa.gov.ru/api/v1/rds/common/declarations/{id}',headers=headers,verify=False,proxies=proxy_ye) # Делаем запрос к продукту
                 print(f'Запрос к продукту {resp}')
                 resp = resp.json()
                 decl_id = resp.get('idDeclScheme')
@@ -370,7 +376,11 @@ def parser(user_id: int, status: list = [],zayvitel: list = [],tech_reg: list = 
                     ids.extend(id)
                 json_data_mult['items']['tnved'][0]['id'].extend(ids)
                 headers['User-Agent'] = ua.random
-                mult_resp = requests.post('https://pub.fsa.gov.ru/nsi/api/multi', headers=headers, json=json_data_mult,verify=False,proxies=proxy)
+                proxi = next(proxy)
+                proxy_ye = dict(http=f'socks5://{proxi}',
+                                https=f'socks5://{proxi}')
+
+                mult_resp = requests.post('https://pub.fsa.gov.ru/nsi/api/multi', headers=headers, json=json_data_mult,verify=False,proxies=proxy_ye)
                 print(f'mult resp {mult_resp}')
                 mult_resp = mult_resp.json()
                 tnved_no = mult_resp.get('tnved')
@@ -410,10 +420,11 @@ def parser(user_id: int, status: list = [],zayvitel: list = [],tech_reg: list = 
                                 adr_proizv_pr, nomer_izg, pochta_izg, idcct, rntd, obsh_np, obsh_u_xp, proiz_country,
                                 razmer_p,tnved,name_production_,name_document,statustestinglabs,name_lab_testing])
                 print(f'{c}/{col}')
-                time.sleep(0.01)
+                time.sleep(0.5)
                 c += 1
                 break
             except Exception as ex:
+                proxi = next(proxy)
                 time.sleep(3)
                 break_count += 1
                 if break_count >= 30:
@@ -424,7 +435,7 @@ def parser(user_id: int, status: list = [],zayvitel: list = [],tech_reg: list = 
     list_ = items  # сюда вставляешь то что прогоняешь через фор смотри где больше ссылок собрано
     print('Сейчас начнем')
     # print(len(list_))
-    CONNECTIONS = 2  # колличетсво потоков
+    CONNECTIONS = 1  # колличетсво потоков
     out = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=CONNECTIONS) as executor:
         future_to_url = {executor.submit(start, url): url for url in list_}
