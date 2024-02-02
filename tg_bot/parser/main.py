@@ -73,8 +73,12 @@ def parser(user_id: int, status: list = [],zayvitel: list = [],tech_reg: list = 
         service = Service()
         start = time.perf_counter()
         while True:
-            try: 
-                with webdriver.Chrome(service=service) as driver:
+            try:
+                options = Options()
+                options.add_argument('--disable-gpu')
+                options.add_argument('--headless=new')
+                options.add_argument('--no-sandbox')
+                with webdriver.Chrome(service=service,options=options) as driver:
                     driver.get("https://pub.fsa.gov.ru/rds/declaration")
                     time.sleep(3)
                     token = driver.execute_script("return localStorage.getItem('fgis_token');")
@@ -85,8 +89,8 @@ def parser(user_id: int, status: list = [],zayvitel: list = [],tech_reg: list = 
                         break
                     driver.close()
             except Exception as error:
-                print(100)
-                print(f"Ошибка: {error}")
+                print(f'Возникла ошибка в селениуме {ex}')
+                time.sleep(1)
 
     token = get_token()
 
