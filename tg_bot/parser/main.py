@@ -20,7 +20,6 @@ from itertools import cycle
 
 
 urllib3.disable_warnings()
-c = 0
 column = [
  'ID','Тип декларации','Технические регламенты','Группа продукции ЕАЭС','Схема декларирования',	'Тип объекта декларирования',	'Статус декларации',	'Регистрационный номер декларации о соответствии',	'Дата регистрации декларации'	,'Дата окончания действия декларации о соответствии',	'Заявитель','Полное наименование юридического лица',	'ИНН(заявитель)',	'ОГРН(-ИП)(заявитель)',	'Адрес места осуществления деятельности',	'Адрес места нахождения(заявитель)',	'Номер телефона(заявитель)',	'Адрес электронной почты(заявитель)',	'Полное наименование','ИНН(иготовитель)',	'Адрес места нахождения(иготовитель)',	'Адрес производства продукции',	'Номер телефона(иготовитель)',	'Адрес электронной почты(иготовитель)',	'Продукция, ввезена для проведения исследований и испытаний в качестве проб (образцов) для целей подтверждения соответствия?',	'Регистрационный номер таможенной декларации',	'Общее наименование продукции',	'Общие условия хранения продукции',	'Происхождение продукции',	'Размер партии',	'Код ТН ВЭД ЕАЭС',	'Наименование (обозначение) продукции',	'Наименование документа',	'Испытания продукции',	'Наименование испытательной лаборатории'
 ]
@@ -68,6 +67,7 @@ for key, value in dct_country_.items():
 def parser(user_id: int, status: list = [],zayvitel: list = [],tech_reg: list = [],type_decl: list = [],type_obj_decl: list = [],proizhodenie_product: list = [],edini_perechen_product_eaes: list = [],
            edini_perechen_product_rf:list = [],reg_date_min: str = '',reg_date_max: str = '',end_date_min: str = '',end_date_max: str = '',group_product_rf: list = [],group_product_eaes: list = []):
     token = ''
+    c = 0
     def get_token():
         print('запустили селениум')
         service = Service()
@@ -435,8 +435,7 @@ def parser(user_id: int, status: list = [],zayvitel: list = [],tech_reg: list = 
                 break_count += 1
                 if break_count >= 30:
                     break
-                print(ex)
-                print('error')
+                print(f'Ошибка в запросе итемов {ex}')
 
     list_ = items  # сюда вставляешь то что прогоняешь через фор смотри где больше ссылок собрано
     print('Сейчас начнем')
@@ -453,7 +452,7 @@ def parser(user_id: int, status: list = [],zayvitel: list = [],tech_reg: list = 
                 data = str(type(exc))
                 print(exc)
             finally:
-                print('Возникла ошибка')
+                print('Finally блок.многопоток завершается')
                 out.append(data)
     date = datetime.date.today().strftime("%Y%m%d")
     workbook = xlsxwriter.Workbook(f"output{user_id}.xlsx")
