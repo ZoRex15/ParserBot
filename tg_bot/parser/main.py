@@ -67,7 +67,6 @@ for key, value in dct_country_.items():
 def parser(user_id: int, status: list = [],zayvitel: list = [],tech_reg: list = [],type_decl: list = [],type_obj_decl: list = [],proizhodenie_product: list = [],edini_perechen_product_eaes: list = [],
            edini_perechen_product_rf:list = [],reg_date_min: str = '',reg_date_max: str = '',end_date_min: str = '',end_date_max: str = '',group_product_rf: list = [],group_product_eaes: list = []):
     token = ''
-    c = 0
     def get_token():
         print('запустили селениум')
         service = Service()
@@ -214,9 +213,10 @@ def parser(user_id: int, status: list = [],zayvitel: list = [],tech_reg: list = 
             print(ex)
             print('error у поискового запроса')
     flattens = []
+    chetchik = 0
     def start(item):
         break_count = 0
-        global c
+        nonlocal chetchik
         while True:
             try:
                 proxi = next(proxy)
@@ -423,9 +423,9 @@ def parser(user_id: int, status: list = [],zayvitel: list = [],tech_reg: list = 
                                 zayv, fzv, inn, ogrn, amod, amn, nomer, pochta, full_name, inn_izgotovitel, adr_izg,
                                 adr_proizv_pr, nomer_izg, pochta_izg, idcct, rntd, obsh_np, obsh_u_xp, proiz_country,
                                 razmer_p,tnved,name_production_,name_document,statustestinglabs,name_lab_testing])
-                print(f'{c}/{col}')
+                chetchik += 1
+                print(f'{chetchik}/{col}')
                 time.sleep(0.5)
-                c += 1
                 break
             except Exception as ex:
                 proxi = next(proxy)
