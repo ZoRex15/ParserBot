@@ -64,7 +64,7 @@ for key, value in dct_country_.items():
     dct_country[value] = key
 
 
-def parser(user_id: int, status: list = [],zayvitel: list = [],tech_reg: list = [],type_decl: list = [],type_obj_decl: list = [],proizhodenie_product: list = [],edini_perechen_product_eaes: list = [],
+def parser(count_requests: int,user_id: int, status: list = [],zayvitel: list = [],tech_reg: list = [],type_decl: list = [],type_obj_decl: list = [],proizhodenie_product: list = [],edini_perechen_product_eaes: list = [],
            edini_perechen_product_rf:list = [],reg_date_min: str = '',reg_date_max: str = '',end_date_min: str = '',end_date_max: str = '',group_product_rf: list = [],group_product_eaes: list = []):
     token = ''
     def get_token():
@@ -125,11 +125,11 @@ def parser(user_id: int, status: list = [],zayvitel: list = [],tech_reg: list = 
 
     headers['Authorization'] = token
     print(headers['Authorization'])
-    with open('tg_bot/parser/col.txt','r',encoding='utf-8') as file:
-        col = file.readlines()[0]
+    #with open('tg_bot/parser/col.txt','r',encoding='utf-8') as file:
+        #col = file.readlines()[0]
     print(col)
     json_data = {
-        'size': int(col),
+        'size': count_requests,
         'page': 0,
         'filter': {
             'status': [
@@ -219,6 +219,7 @@ def parser(user_id: int, status: list = [],zayvitel: list = [],tech_reg: list = 
     def start(item):
         break_count = 0
         nonlocal chetchik
+        nonlocal count_requests
         while True:
             try:
                 proxi = next(proxy)
@@ -426,7 +427,7 @@ def parser(user_id: int, status: list = [],zayvitel: list = [],tech_reg: list = 
                                 adr_proizv_pr, nomer_izg, pochta_izg, idcct, rntd, obsh_np, obsh_u_xp, proiz_country,
                                 razmer_p,tnved,name_production_,name_document,statustestinglabs,name_lab_testing])
                 chetchik += 1
-                print(f'{chetchik}/{col}')
+                print(f'{chetchik}/{count_requests}')
                 time.sleep(0.5)
                 break
             except Exception as ex:
