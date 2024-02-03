@@ -445,7 +445,11 @@ def parser(count_requests: int, user_id: int, message_id: int, status: list = []
                 break_count += 1
                 if break_count >= 30:
                     break
-                print(f'Ошибка в запросе итемов {ex}')
+                RabbitMQ.send_status(
+                    chat_id=user_id,
+                    message_id=message_id,
+                    message=f'Возникла ошибка в запросе к декларации {url}'
+                )
 
     list_ = items  # сюда вставляешь то что прогоняешь через фор смотри где больше ссылок собрано
     print('Сейчас начнем')
