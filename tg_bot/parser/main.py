@@ -127,7 +127,6 @@ def parser(count_requests: int,user_id: int, status: list = [],zayvitel: list = 
     print(headers['Authorization'])
     #with open('tg_bot/parser/col.txt','r',encoding='utf-8') as file:
         #col = file.readlines()[0]
-    print(col)
     json_data = {
         'size': count_requests,
         'page': 0,
