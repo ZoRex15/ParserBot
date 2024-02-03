@@ -88,7 +88,7 @@ def parser(count_requests: int,user_id: int, status: list = [],zayvitel: list = 
                         break
                     driver.close()
             except Exception as error:
-                print(f'Возникла ошибка в селениуме {ex}')
+                print(f'Возникла ошибка в селениуме {error}')
                 time.sleep(1)
 
     token = get_token()
@@ -127,7 +127,7 @@ def parser(count_requests: int,user_id: int, status: list = [],zayvitel: list = 
     print(headers['Authorization'])
     #with open('tg_bot/parser/col.txt','r',encoding='utf-8') as file:
         #col = file.readlines()[0]
-    print(col)
+    
     json_data = {
         'size': count_requests,
         'page': 0,
