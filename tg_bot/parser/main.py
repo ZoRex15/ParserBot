@@ -452,7 +452,7 @@ def parser(count_requests: int,user_id: int, status: list = [],zayvitel: list = 
                 data = str(type(exc))
                 print(exc)
             finally:
-                print('Finally блок.многопоток завершается')
+                print('Парсинг завершен')
                 out.append(data)
     date = datetime.date.today().strftime("%Y%m%d")
     workbook = xlsxwriter.Workbook(f"output{user_id}.xlsx")
