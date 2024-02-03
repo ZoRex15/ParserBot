@@ -1,5 +1,5 @@
 import sqlite3
-
+import pika
 
 class Database:
     __DATABASE = 'database.db'
@@ -45,7 +45,7 @@ class Database:
         with sqlite3.connect(cls.__DATABASE) as connect:
             cursor = connect.cursor()
             if mode == 'name':
-                with sqlite3.connect() as connect:
+                with sqlite3.connect(cls.__DATABASE) as connect:
                     cursor = connect.cursor()
                     cursor.execute('SELECT id, name FROM Settings')
                     for i in cursor.fetchall():
@@ -80,4 +80,17 @@ class Database:
             cursor.execute('DELETE FROM Filters WHERE user_id = ?', (user_id,))
 
         
-            
+class RabbitMQ:
+    __HOST = 'amqp://guest:guest@localhost/'
+
+    @classmethod
+    def send_status(cls, chat_id: int, message_id: int, message: str):
+        connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost', credentials=pika.PlainCredentials('guest', 'guest')))
+        channel = connection.channel()
+
+        channel.queue_declare(queue='requests', durable=True)
+        channel.basic_publish(exchange='', routing_key='requests', body=f'{chat_id}:{message_id}:{message}')
+
+        connection.close()
+
+

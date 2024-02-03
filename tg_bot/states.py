@@ -44,3 +44,6 @@ class GroupsOfProductsOfTheRussianFederation(StatesGroup):
 
 class GroupsOfProductsOfTheEAEU(StatesGroup):
     choice_groups_of_products_of_the_eaeu = State()
+
+class StartParsingSG(StatesGroup):
+    input_requests = State()

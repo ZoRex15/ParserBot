@@ -1,22 +1,44 @@
 from aiogram.types import Message, CallbackQuery
 from aiogram_dialog import DialogManager, StartMode
+from aiogram_dialog.widgets.input import ManagedTextInput, MessageInput
 from aiogram_dialog.widgets.kbd import Button
 from aiogram.types import FSInputFile
 
 
 from service.service import Database
 
-from states import SettingsSG
+from states import SettingsSG, StartParsingSG, MainMenuSG
 
 from parser.main import parser
 from datetime import date
+from typing import Any
 import os
 
 
 
 async def start_parsing(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    await dialog_manager.start(state=StartParsingSG.input_requests)
+
+async def select_filters(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    await dialog_manager.start(state=SettingsSG.choiсe_settings)
+
+async def clear_all_filters(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    Database.clear_all_filters(user_id=callback.from_user.id)
+    await callback.answer('Фильтры были очищены')
+
+def check_count_requests(text: Any):
+    if int(text) not in range(1, 1001):
+        raise ValueError
+    
+async def set_count_requests(
+        message: Message,
+        widget: ManagedTextInput,
+        dialog_manager: DialogManager,
+        text: str
+):  
+    answer_messsage = await message.answer('Статус парсинга: Запуск...')
     parser_settings = Database.get_all_filters(
-        user_id=callback.from_user.id,
+        user_id=message.from_user.id,
         mode='id'
     )
     reg_date_max, reg_date_min, end_date_max, end_date_min = None, None, None, None
@@ -38,21 +60,30 @@ async def start_parsing(callback: CallbackQuery, button: Button, dialog_manager:
            reg_date_min=reg_date_min,
            end_date_max=end_date_max,
            end_date_min=end_date_min,
-           user_id=callback.from_user.id
+           user_id=message.from_user.id,
+           count_requests=int(message.text),
+           message_id=answer_messsage.message_id
            )
     file = FSInputFile(path=path_to_file)
-    await callback.bot.send_document(
-        chat_id=callback.from_user.id,
+    await message.bot.send_document(
+        chat_id=message.from_user.id,
         document=file
     )
     try:
         os.remove(path=path_to_file)
     except Exception as error:
         print(error)
+    await dialog_manager.start(state=MainMenuSG.menu)
+    
 
-async def select_filters(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
-    await dialog_manager.start(state=SettingsSG.choiсe_settings)
+async def error_input(
+        message: Message,
+        widget: ManagedTextInput,
+        dialog_manager: DialogManager,
+        text: str 
+):
+    await message.answer('Введите число от 1 до 1000')
 
-async def clear_all_filters(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
-    Database.clear_all_filters(user_id=callback.from_user.id)
-    await callback.answer('Фильтры были очищены')
+async def no_requests(message: Message, widget: MessageInput, dialog_manager: DialogManager):
+    await message.answer(text='Вы ввели вообще не количество запросов')
+

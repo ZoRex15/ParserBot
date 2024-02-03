@@ -4,7 +4,7 @@ from config import Config, load_config
 from aiogram.fsm.storage.redis import RedisStorage, Redis, DefaultKeyBuilder
 from aiogram.fsm.storage.memory import SimpleEventIsolation
 from aiogram_dialog import setup_dialogs
-from dialogs import (main_menu,
+from dialogs import (main_menu_router,
                     start,
                     start_router,
                     settings_router)
@@ -18,7 +18,7 @@ async def main():
     dp = Dispatcher(storage=storage, events_isolation=SimpleEventIsolation())
     dp.include_router(start_router)
     dp.include_router(start)
-    dp.include_router(main_menu)
+    dp.include_router(main_menu_router)
     dp.include_router(settings_router)
     setup_dialogs(dp)
     await bot.delete_webhook(drop_pending_updates=True)

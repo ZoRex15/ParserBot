@@ -16,7 +16,7 @@ from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service as ChromiumService
 from itertools import cycle
-
+from service.service import RabbitMQ
 
 
 urllib3.disable_warnings()
@@ -64,7 +64,7 @@ for key, value in dct_country_.items():
     dct_country[value] = key
 
 
-def parser(count_requests: int,user_id: int, status: list = [],zayvitel: list = [],tech_reg: list = [],type_decl: list = [],type_obj_decl: list = [],proizhodenie_product: list = [],edini_perechen_product_eaes: list = [],
+def parser(count_requests: int, user_id: int, message_id: int, status: list = [],zayvitel: list = [],tech_reg: list = [],type_decl: list = [],type_obj_decl: list = [],proizhodenie_product: list = [],edini_perechen_product_eaes: list = [],
            edini_perechen_product_rf:list = [],reg_date_min: str = '',reg_date_max: str = '',end_date_min: str = '',end_date_max: str = '',group_product_rf: list = [],group_product_eaes: list = []):
     token = ''
     def get_token():
@@ -88,6 +88,11 @@ def parser(count_requests: int,user_id: int, status: list = [],zayvitel: list = 
                         break
                     driver.close()
             except Exception as error:
+                RabbitMQ.send_status(
+                    chat_id=user_id,
+                    message_id=message_id,
+                    message='Возникла ошибка в селениуме'
+                )
                 print(f'Возникла ошибка в селениуме {error}')
                 time.sleep(1)
 
@@ -127,7 +132,6 @@ def parser(count_requests: int,user_id: int, status: list = [],zayvitel: list = 
     print(headers['Authorization'])
     #with open('tg_bot/parser/col.txt','r',encoding='utf-8') as file:
         #col = file.readlines()[0]
-    
     json_data = {
         'size': count_requests,
         'page': 0,
@@ -428,6 +432,11 @@ def parser(count_requests: int,user_id: int, status: list = [],zayvitel: list = 
                                 razmer_p,tnved,name_production_,name_document,statustestinglabs,name_lab_testing])
                 chetchik += 1
                 print(f'{chetchik}/{count_requests}')
+                RabbitMQ.send_status(
+                    chat_id=user_id,
+                    message_id=message_id,
+                    message=f'{chetchik}/{count_requests}'
+                )
                 time.sleep(0.5)
                 break
             except Exception as ex:
@@ -453,7 +462,7 @@ def parser(count_requests: int,user_id: int, status: list = [],zayvitel: list = 
                 data = str(type(exc))
                 print(exc)
             finally:
-                print('Finally блок.многопоток завершается')
+                print('Парсинг завершен')
                 out.append(data)
     date = datetime.date.today().strftime("%Y%m%d")
     workbook = xlsxwriter.Workbook(f"output{user_id}.xlsx")
