@@ -16,7 +16,6 @@ from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service as ChromiumService
 from itertools import cycle
-import traceback
 from service.service import RabbitMQ
 
 
@@ -65,7 +64,7 @@ for key, value in dct_country_.items():
     dct_country[value] = key
 
 
-def parser(count_requests: int,user_id: int, status: list = [],zayvitel: list = [],tech_reg: list = [],type_decl: list = [],type_obj_decl: list = [],proizhodenie_product: list = [],edini_perechen_product_eaes: list = [],
+def parser(count_requests: int, user_id: int, message_id: int, status: list = [],zayvitel: list = [],tech_reg: list = [],type_decl: list = [],type_obj_decl: list = [],proizhodenie_product: list = [],edini_perechen_product_eaes: list = [],
            edini_perechen_product_rf:list = [],reg_date_min: str = '',reg_date_max: str = '',end_date_min: str = '',end_date_max: str = '',group_product_rf: list = [],group_product_eaes: list = []):
     token = ''
     def get_token():
@@ -89,7 +88,12 @@ def parser(count_requests: int,user_id: int, status: list = [],zayvitel: list = 
                         break
                     driver.close()
             except Exception as error:
-                print(f'Возникла ошибка в селениуме {ex}',traceback.format_exc())
+                RabbitMQ.send_status(
+                    chat_id=user_id,
+                    message_id=message_id,
+                    message='Возникла ошибка в селениуме'
+                )
+                print(f'Возникла ошибка в селениуме {error}')
                 time.sleep(1)
 
     token = get_token()
@@ -198,6 +202,7 @@ def parser(count_requests: int,user_id: int, status: list = [],zayvitel: list = 
             proxi = next(proxy)
             proxy_ye = dict(http=f'socks5://{proxi}',
                             https=f'socks5://{proxi}')
+            print(f"Делаем поисковой запрос с этим прокси {proxy_ye}")
             response = requests.post(
                     'https://pub.fsa.gov.ru/api/v1/rds/common/declarations/get',
                     headers=headers,
@@ -211,7 +216,8 @@ def parser(count_requests: int,user_id: int, status: list = [],zayvitel: list = 
             proxi = next(proxy)
             time.sleep(1)
             print(ex)
-            print('error у поискового запроса',traceback.format_exc())
+            print('error у поискового запроса')
+            print(f'Какой прокси используем {proxy_ye}')
     flattens = []
     chetchik = 0
     def start(item):
@@ -288,8 +294,7 @@ def parser(count_requests: int,user_id: int, status: list = [],zayvitel: list = 
                 print(f'Запрос к продукту {resp}')
                 resp = resp.json()
                 decl_id = resp.get('idDeclScheme')
-                if decl_id is not None:
-                    json_data_mult['items']['validationScheme2'][0]['id'].append(decl_id)
+                json_data_mult['items']['validationScheme2'][0]['id'].append(decl_id)
                 zayv = resp.get('applicant').get('shortName') # Заявитель
                 fzv = resp.get('applicant').get('fullName') #Полное наименование юридического лица
                 inn = item.get('creatorInn') # ИНН(заявитель)
@@ -385,13 +390,14 @@ def parser(count_requests: int,user_id: int, status: list = [],zayvitel: list = 
                 proxi = next(proxy)
                 proxy_ye = dict(http=f'socks5://{proxi}',
                                 https=f'socks5://{proxi}')
+
                 mult_resp = requests.post('https://pub.fsa.gov.ru/nsi/api/multi', headers=headers, json=json_data_mult,verify=False,proxies=proxy_ye)
                 print(f'mult resp {mult_resp}')
                 mult_resp = mult_resp.json()
-                tnved_no = [] if mult_resp.get('tnved') is None else mult_resp.get('tnved')
+                tnved_no = mult_resp.get('tnved')
                 for i in tnved_no:
                     tnved.append(f'{i.get("code")}{i.get("name")}')
-                scheme = [] if mult_resp.get('validationScheme2') is None else mult_resp.get('validationScheme2')
+                scheme = mult_resp.get('validationScheme2')
                 for i in scheme:
                     scheme_decl = i.get('name')
                 tnved = list(map(lambda x: '' if x is None else x, tnved))
@@ -426,6 +432,11 @@ def parser(count_requests: int,user_id: int, status: list = [],zayvitel: list = 
                                 razmer_p,tnved,name_production_,name_document,statustestinglabs,name_lab_testing])
                 chetchik += 1
                 print(f'{chetchik}/{count_requests}')
+                RabbitMQ.send_status(
+                    chat_id=user_id,
+                    message_id=message_id,
+                    message=f'{chetchik}/{count_requests}'
+                )
                 time.sleep(0.5)
                 break
             except Exception as ex:
@@ -434,7 +445,11 @@ def parser(count_requests: int,user_id: int, status: list = [],zayvitel: list = 
                 break_count += 1
                 if break_count >= 30:
                     break
-                print(f'Ошибка в запросе итемов {ex}',traceback.format_exc())
+                RabbitMQ.send_status(
+                    chat_id=user_id,
+                    message_id=message_id,
+                    message=f'Возникла ошибка в запросе к декларации {url}'
+                )
 
     list_ = items  # сюда вставляешь то что прогоняешь через фор смотри где больше ссылок собрано
     print('Сейчас начнем')
@@ -451,7 +466,7 @@ def parser(count_requests: int,user_id: int, status: list = [],zayvitel: list = 
                 data = str(type(exc))
                 print(exc)
             finally:
-                print('Парсинг завершён')
+                print('Парсинг завершен')
                 out.append(data)
     date = datetime.date.today().strftime("%Y%m%d")
     workbook = xlsxwriter.Workbook(f"output{user_id}.xlsx")
