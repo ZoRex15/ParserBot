@@ -17,6 +17,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service as ChromiumService
 from itertools import cycle
 import traceback
+from service.service import RabbitMQ
 
 
 urllib3.disable_warnings()
