@@ -16,7 +16,7 @@ from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service as ChromiumService
 from itertools import cycle
-
+import traceback
 
 
 urllib3.disable_warnings()
@@ -88,7 +88,7 @@ def parser(count_requests: int,user_id: int, status: list = [],zayvitel: list = 
                         break
                     driver.close()
             except Exception as error:
-                print(f'Возникла ошибка в селениуме {ex}')
+                print(f'Возникла ошибка в селениуме {ex}',traceback.format_exc())
                 time.sleep(1)
 
     token = get_token()
@@ -127,7 +127,6 @@ def parser(count_requests: int,user_id: int, status: list = [],zayvitel: list = 
     print(headers['Authorization'])
     #with open('tg_bot/parser/col.txt','r',encoding='utf-8') as file:
         #col = file.readlines()[0]
-    print(col)
     json_data = {
         'size': count_requests,
         'page': 0,
@@ -211,7 +210,7 @@ def parser(count_requests: int,user_id: int, status: list = [],zayvitel: list = 
             proxi = next(proxy)
             time.sleep(1)
             print(ex)
-            print('error у поискового запроса')
+            print('error у поискового запроса',traceback.format_exc())
     flattens = []
     chetchik = 0
     def start(item):
@@ -288,7 +287,8 @@ def parser(count_requests: int,user_id: int, status: list = [],zayvitel: list = 
                 print(f'Запрос к продукту {resp}')
                 resp = resp.json()
                 decl_id = resp.get('idDeclScheme')
-                json_data_mult['items']['validationScheme2'][0]['id'].append(decl_id)
+                if decl_id is not None:
+                    json_data_mult['items']['validationScheme2'][0]['id'].append(decl_id)
                 zayv = resp.get('applicant').get('shortName') # Заявитель
                 fzv = resp.get('applicant').get('fullName') #Полное наименование юридического лица
                 inn = item.get('creatorInn') # ИНН(заявитель)
@@ -384,14 +384,13 @@ def parser(count_requests: int,user_id: int, status: list = [],zayvitel: list = 
                 proxi = next(proxy)
                 proxy_ye = dict(http=f'socks5://{proxi}',
                                 https=f'socks5://{proxi}')
-
                 mult_resp = requests.post('https://pub.fsa.gov.ru/nsi/api/multi', headers=headers, json=json_data_mult,verify=False,proxies=proxy_ye)
                 print(f'mult resp {mult_resp}')
                 mult_resp = mult_resp.json()
-                tnved_no = mult_resp.get('tnved')
+                tnved_no = [] if mult_resp.get('tnved') is None else mult_resp.get('tnved')
                 for i in tnved_no:
                     tnved.append(f'{i.get("code")}{i.get("name")}')
-                scheme = mult_resp.get('validationScheme2')
+                scheme = [] if mult_resp.get('validationScheme2') is None else mult_resp.get('validationScheme2')
                 for i in scheme:
                     scheme_decl = i.get('name')
                 tnved = list(map(lambda x: '' if x is None else x, tnved))
@@ -434,7 +433,7 @@ def parser(count_requests: int,user_id: int, status: list = [],zayvitel: list = 
                 break_count += 1
                 if break_count >= 30:
                     break
-                print(f'Ошибка в запросе итемов {ex}')
+                print(f'Ошибка в запросе итемов {ex}',traceback.format_exc())
 
     list_ = items  # сюда вставляешь то что прогоняешь через фор смотри где больше ссылок собрано
     print('Сейчас начнем')
@@ -451,7 +450,7 @@ def parser(count_requests: int,user_id: int, status: list = [],zayvitel: list = 
                 data = str(type(exc))
                 print(exc)
             finally:
-                print('Finally блок.многопоток завершается')
+                print('Парсинг завершён')
                 out.append(data)
     date = datetime.date.today().strftime("%Y%m%d")
     workbook = xlsxwriter.Workbook(f"output{user_id}.xlsx")
