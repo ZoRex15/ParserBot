@@ -17,6 +17,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.service import Service as ChromiumService
 from itertools import cycle
 from service.service import RabbitMQ
+import traceback
 
 
 urllib3.disable_warnings()
@@ -93,7 +94,7 @@ def parser(count_requests: int, user_id: int, message_id: int, status: list = []
                     message_id=message_id,
                     message='Возникла ошибка в селениуме'
                 )
-                print(f'Возникла ошибка в селениуме {error}')
+                print(f'Возникла ошибка в селениуме {error}',traceback.format_exc())
                 time.sleep(1)
 
     token = get_token()
@@ -216,7 +217,7 @@ def parser(count_requests: int, user_id: int, message_id: int, status: list = []
             proxi = next(proxy)
             time.sleep(1)
             print(ex)
-            print('error у поискового запроса')
+            print('error у поискового запроса',traceback.format_exc())
             print(f'Какой прокси используем {proxy_ye}')
     flattens = []
     chetchik = 0
@@ -294,7 +295,8 @@ def parser(count_requests: int, user_id: int, message_id: int, status: list = []
                 print(f'Запрос к продукту {resp}')
                 resp = resp.json()
                 decl_id = resp.get('idDeclScheme')
-                json_data_mult['items']['validationScheme2'][0]['id'].append(decl_id)
+                if decl_id is not None:
+                    json_data_mult['items']['validationScheme2'][0]['id'].append(decl_id)
                 zayv = resp.get('applicant').get('shortName') # Заявитель
                 fzv = resp.get('applicant').get('fullName') #Полное наименование юридического лица
                 inn = item.get('creatorInn') # ИНН(заявитель)
@@ -394,10 +396,10 @@ def parser(count_requests: int, user_id: int, message_id: int, status: list = []
                 mult_resp = requests.post('https://pub.fsa.gov.ru/nsi/api/multi', headers=headers, json=json_data_mult,verify=False,proxies=proxy_ye)
                 print(f'mult resp {mult_resp}')
                 mult_resp = mult_resp.json()
-                tnved_no = mult_resp.get('tnved')
+                tnved_no = [] if mult_resp.get('tnved') is None else mult_resp.get('tnved')
                 for i in tnved_no:
                     tnved.append(f'{i.get("code")}{i.get("name")}')
-                scheme = mult_resp.get('validationScheme2')
+                scheme = [] if mult_resp.get('validationScheme2') is None else mult_resp.get('validationScheme2')
                 for i in scheme:
                     scheme_decl = i.get('name')
                 tnved = list(map(lambda x: '' if x is None else x, tnved))
@@ -448,7 +450,7 @@ def parser(count_requests: int, user_id: int, message_id: int, status: list = []
                 RabbitMQ.send_status(
                     chat_id=user_id,
                     message_id=message_id,
-                    message=f'Возникла ошибка в запросе к декларации {url}'
+                    message=f'Возникла ошибка в запросе к декларации {url}{traceback.format_exc()}'
                 )
 
     list_ = items  # сюда вставляешь то что прогоняешь через фор смотри где больше ссылок собрано
