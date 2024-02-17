@@ -111,14 +111,7 @@ def parser(count_requests: int, user_id: int, message_id: int, status: list = []
                                 https=f'socks5://{proxi}')
                 response = requests.post('https://pub.fsa.gov.ru/login', cookies=cookies_token, headers=headers_token,
                                          json=json_data_token,proxy_ye=proxy_ye)
-                token = response.headers.get('Authorization')
-                if token:
-                    print(f'Успешно получили токен {token}')
-                    return response.headers.get('Authorization')
-                    break
-                else:
-                    print('Не получили токен')
-                    time.sleep(3)
+                return response.headers.get('Authorization')
             except Exception as error:
                 RabbitMQ.send_status(
                     chat_id=user_id,
