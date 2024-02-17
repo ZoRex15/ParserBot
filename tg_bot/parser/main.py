@@ -68,34 +68,65 @@ for key, value in dct_country_.items():
 def parser(count_requests: int, user_id: int, message_id: int, status: list = [],zayvitel: list = [],tech_reg: list = [],type_decl: list = [],type_obj_decl: list = [],proizhodenie_product: list = [],edini_perechen_product_eaes: list = [],
            edini_perechen_product_rf:list = [],reg_date_min: str = '',reg_date_max: str = '',end_date_min: str = '',end_date_max: str = '',group_product_rf: list = [],group_product_eaes: list = []):
     token = ''
+    with open('tg_bot/parser/proxy.txt','r',encoding='utf-8') as file:
+        proxyy_ = list(map(lambda x: x.strip(), file.readlines()[1:]))
+    proxy = cycle(proxyy_)
     def get_token():
-        print('запустили селениум')
-        service = Service()
+        print('запустили функцию для получения токена')
         start = time.perf_counter()
         while True:
             try:
-                options = Options()
-                options.add_argument('--disable-gpu')
-                options.add_argument('--headless=new')
-                options.add_argument('--no-sandbox')
-                with webdriver.Chrome(service=service,options=options) as driver:
-                    driver.get("https://pub.fsa.gov.ru/rds/declaration")
+                cookies_token = {
+                    '_ym_uid': '1708165225226788053',
+                    '_ym_d': '1708165225',
+                    '_ym_isad': '2',
+                }
+
+                headers_token = {
+                    'Accept': 'application/json, text/plain, */*',
+                    'Accept-Language': 'ru-RU,ru;q=0.9',
+                    'Authorization': 'Bearer null',
+                    'Connection': 'keep-alive',
+                    'Content-Type': 'application/json',
+                    # 'Cookie': '_ym_uid=1708165225226788053; _ym_d=1708165225; _ym_isad=2',
+                    'Origin': 'https://pub.fsa.gov.ru',
+                    'Referer': 'https://pub.fsa.gov.ru/rds/declaration',
+                    'Sec-Fetch-Dest': 'empty',
+                    'Sec-Fetch-Mode': 'cors',
+                    'Sec-Fetch-Site': 'same-origin',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+                    'lkId': '',
+                    'orgId': '',
+                    'sec-ch-ua': '"Not A(Brand";v="99", "Google Chrome";v="121", "Chromium";v="121"',
+                    'sec-ch-ua-mobile': '?0',
+                    'sec-ch-ua-platform': '"Windows"',
+                }
+
+                json_data_token = {
+                    'username': 'anonymous',
+                    'password': 'hrgesf7HDR67Bd',
+                }
+                proxi = next(proxy)
+                proxy_ye = dict(http=f'socks5://{proxi}',
+                                https=f'socks5://{proxi}')
+                response = requests.post('https://pub.fsa.gov.ru/login', cookies=cookies_token, headers=headers_token,
+                                         json=json_data_token,proxy_ye=proxy_ye)
+                token = response.headers.get('Authorization')
+                if token:
+                    print(f'Успешно получили токен {token}')
+                    token = response.headers.get('Authorization')
+                    return token
+                else:
+                    print('Не получили токен')
                     time.sleep(3)
-                    token = driver.execute_script("return localStorage.getItem('fgis_token');")
-                    if token:
-                        driver.close()
-                        print(time.perf_counter() - start)
-                        return token
-                        break
-                    driver.close()
             except Exception as error:
                 RabbitMQ.send_status(
                     chat_id=user_id,
                     message_id=message_id,
-                    message='Возникла ошибка в селениуме'
+                    message='Возникла ошибка в получении токена'
                 )
-                print(f'Возникла ошибка в селениуме {error}',traceback.format_exc())
-                time.sleep(1)
+                print(f'Возникла ошибка в получении токена {error}',traceback.format_exc())
+                time.sleep(3)
 
     token = get_token()
 
@@ -192,9 +223,6 @@ def parser(count_requests: int, user_id: int, message_id: int, status: list = []
     json_data['filter']['regDate']['maxDate'] = reg_date_max
     json_data['filter']['endDate']['minDate'] = end_date_min
     json_data['filter']['endDate']['maxDate'] = end_date_max
-    with open('tg_bot/parser/proxy.txt','r',encoding='utf-8') as file:
-        proxyy_ = list(map(lambda x: x.strip(), file.readlines()[1:]))
-    proxy = cycle(proxyy_)
 
     ua = UserAgent()
     headers['User-Agent'] = ua.random
