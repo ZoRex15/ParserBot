@@ -484,20 +484,8 @@ def parser(count_requests: int, user_id: int, message_id: int, status: list = []
     list_ = items  # сюда вставляешь то что прогоняешь через фор смотри где больше ссылок собрано
     print('Сейчас начнем')
     # print(len(list_))
-    CONNECTIONS = 1  # колличетсво потоков
-    out = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=CONNECTIONS) as executor:
-        future_to_url = {executor.submit(start, url): url for url in list_}
-        done, _ = concurrent.futures.wait(future_to_url, return_when=concurrent.futures.ALL_COMPLETED)
-        for future in done:
-            try:
-                data = future.result()
-            except Exception as exc:
-                data = str(type(exc))
-                print(exc)
-            finally:
-                print('Парсинг завершен')
-                out.append(data)
+    for it in items:
+        start(it)
     date = datetime.date.today().strftime("%Y%m%d")
     workbook = xlsxwriter.Workbook(f"output{user_id}.xlsx")
     worksheet = workbook.add_worksheet()
