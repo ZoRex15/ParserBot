@@ -12,12 +12,17 @@ from states import SettingsSG, StartParsingSG, MainMenuSG
 from parser.main import parser
 from datetime import date
 from typing import Any
+from config.config import load_config, Config
 import os
+import asyncio
 
-
+config: Config = load_config('tg_bot/.env')
 
 async def start_parsing(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
-    await dialog_manager.start(state=StartParsingSG.input_requests)
+    if callback.from_user.id in config.tg_bot.admin_ids:
+        await dialog_manager.start(state=StartParsingSG.input_requests)
+    else:
+        await callback.answer(text='Недостаточно прав!')
 
 async def select_filters(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     await dialog_manager.start(state=SettingsSG.choiсe_settings)
@@ -69,6 +74,7 @@ async def set_count_requests(
         chat_id=message.from_user.id,
         document=file
     )
+    await asyncio.sleep(2)
     try:
         os.remove(path=path_to_file)
     except Exception as error:

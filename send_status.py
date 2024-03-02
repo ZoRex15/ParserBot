@@ -5,7 +5,7 @@ from tg_bot.config.config import Config, load_config
 
 
 config: Config = load_config('tg_bot/.env')
-print(config.tg_bot.token)
+
         
 async def main():
     bot = Bot(config.tg_bot.token)
