@@ -68,7 +68,7 @@ async def set_count_requests(
         end_date_max=end_date_max,
         end_date_min=end_date_min,
         count_requests=int(message.text),
-        row_sertificate=
+        row_sertificate=...
     )
     path_to_file = pars_decl.parser(
            Filters=filters,

@@ -250,10 +250,6 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
     def start(item):
         break_count = 0
         nonlocal chetchik
-<<<<<<< Updated upstream
-=======
-        nonlocal Filters.count_requests
->>>>>>> Stashed changes
         while True:
             try:
                 proxi = next(proxy)
