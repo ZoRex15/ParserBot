@@ -238,10 +238,10 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
             print(f'Какой прокси используем {proxy_ye}')
     flattens = []
     chetchik = 0
+    count_requests = Filters.count_requests
     def start(item):
         break_count = 0
         nonlocal chetchik
-        nonlocal count_requests
         while True:
             try:
                 proxi = next(proxy)

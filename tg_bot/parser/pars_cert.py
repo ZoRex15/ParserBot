@@ -245,10 +245,10 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
     chetchik = 0
     session = Session()
     session.headers.update(headers)
+    count_requests = Filters.count_requests
     def start(item):
         break_count = 0
         nonlocal chetchik
-        nonlocal count_requests
         while True:
             try:
                 proxi = next(proxy)
