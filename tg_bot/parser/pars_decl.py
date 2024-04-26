@@ -231,7 +231,7 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
                     json=json_data,
                 proxies=proxy_ye,verify=False
             )
-            logger.info('Поисковой запрос',response)
+            logger.info(f'Поисковой запрос {response}')
             items = response.json().get('items',[])
             break
         except Exception as ex:
