@@ -9,7 +9,8 @@ from service.service import Database
 
 from states import SettingsSG, StartParsingSG, MainMenuSG
 
-from parser.main import parser
+from tg_bot.parser import pars_cert, pars_decl
+from tg_bot.dto import FiltersDTO
 from datetime import date
 from typing import Any
 from config.config import load_config, Config
@@ -53,22 +54,27 @@ async def set_count_requests(
     if parser_settings['Дата окончания']:
         end_date = [date.fromisoformat(i) for i in parser_settings['Дата окончания'].split(',')]
         end_date_max, end_date_min = max(end_date).strftime('%Y-%m-%d'), min(end_date).strftime('%Y-%m-%d')
-    path_to_file = parser(status=parser_settings['Статус'],
-           zayvitel=parser_settings['Вид заявителя'],
-           tech_reg=parser_settings['Технический регламент'],
-           type_decl=parser_settings['Тип декларации'],
-           type_obj_decl=parser_settings['Тип объекта декларации'],
-           proizhodenie_product=parser_settings['Происхождение продукции'],
-           edini_perechen_product_eaes=parser_settings['Единый перечень продукции ЕАЭС'],
-           edini_perechen_product_rf=parser_settings['Единый перечень продукции РФ'],
-           reg_date_max=reg_date_max,
-           reg_date_min=reg_date_min,
-           end_date_max=end_date_max,
-           end_date_min=end_date_min,
+    filters = FiltersDTO(
+        status=parser_settings['Статус'],
+        zayvitel=parser_settings['Вид заявителя'],
+        tech_reg=parser_settings['Технический регламент'],
+        type_decl=parser_settings['Тип декларации'],
+        type_obj_decl=parser_settings['Тип объекта декларации'],
+        proizhodenie_product=parser_settings['Происхождение продукции'],
+        edini_perechen_product_eaes=parser_settings['Единый перечень продукции ЕАЭС'],
+        edini_perechen_product_rf=parser_settings['Единый перечень продукции РФ'],
+        reg_date_max=reg_date_max,
+        reg_date_min=reg_date_min,
+        end_date_max=end_date_max,
+        end_date_min=end_date_min,
+        count_requests=int(message.text),
+        row_sertificate=
+    )
+    path_to_file = pars_decl.parser(
+           Filters=filters,
            user_id=message.from_user.id,
-           count_requests=int(message.text),
-           message_id=answer_messsage.message_id
-           )
+           message_id=message.message_id
+    )
     file = FSInputFile(path=path_to_file)
     await message.bot.send_document(
         chat_id=message.from_user.id,

@@ -24,8 +24,11 @@ main_menu = Dialog(
         Format('{settings}'),
         
         Column(
-            Button(text=Const('Начать парсинг по выбранным фильтрам'),
-                   id='start_parsing',
+            Button(text=Const('Парсинг: '),
+                   id='start_parsing_d',
+                   on_click=start_parsing),
+            Button(text=Const('Парсинг: '),
+                   id='start_parsing_c',
                    on_click=start_parsing),
             Button(text=Const('Выбрать фильтры'),
                               id='select_filters',
