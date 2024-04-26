@@ -1,9 +1,6 @@
 import datetime
 import requests
 from requests import Session
-from selenium.webdriver.chrome.options import Options
-from selenium import webdriver
-import undetected_chromedriver as uc
 import time
 from anti_useragent import UserAgent
 import json
@@ -11,13 +8,11 @@ from pprint import pprint
 import xlsxwriter
 import urllib3
 import concurrent.futures
-from selenium.webdriver.chrome.service import Service
-from selenium import webdriver
-from webdriver_manager.chrome import ChromeDriverManager
-from selenium.webdriver.chrome.service import Service as ChromiumService
 from itertools import cycle
-from service.service import RabbitMQ
 import traceback
+
+from tg_bot.dto import FiltersDTO
+from tg_bot.service.service import RabbitMQ
 
 
 urllib3.disable_warnings()
@@ -65,8 +60,8 @@ for key, value in dct_country_.items():
     dct_country[value] = key
 
 
-def parser(count_requests: int, user_id: int, message_id: int, status: list = [],zayvitel: list = [],tech_reg: list = [],type_decl: list = [],type_obj_decl: list = [],proizhodenie_product: list = [],edini_perechen_product_eaes: list = [],
-           edini_perechen_product_rf:list = [],reg_date_min: str = '',reg_date_max: str = '',end_date_min: str = '',end_date_max: str = '',group_product_rf: list = [],group_product_eaes: list = []):
+def parser(user_id: int, message_id: int, Filters: FiltersDTO):
+
     token = ''
     with open('tg_bot/parser/proxy.txt','r',encoding='utf-8') as file:
         proxyy_ = list(map(lambda x: x.strip(), file.readlines()[1:]))
@@ -165,12 +160,12 @@ def parser(count_requests: int, user_id: int, message_id: int, status: list = []
     #with open('tg_bot/parser/col.txt','r',encoding='utf-8') as file:
         #col = file.readlines()[0]
     json_data = {
-        'size': count_requests,
+        'size': Filters.count_requests,
         'page': 0,
         'filter': {
             'status': [
             ],
-            'idDeclType': [],
+            'idCertType': [],
             'idCertObjectType': [],
             'idProductType': [],
             'idGroupRU': [],
@@ -203,26 +198,25 @@ def parser(count_requests: int, user_id: int, message_id: int, status: list = []
         },
         'columnsSort': [
             {
-                'column': 'declDate',
+                'column': 'date',
                 'sort': 'DESC',
             },
-        ], #status: list = [],zayvitel: list = [],tech_reg: list = [],type_decl: list = [],type_obj_decl: list = [],proizhodenie_product: list = [],edini_perechen_product_eaes: list = [],
-           #edini_perechen_product_rf:list = [],reg_date_min: str = '',reg_date_max: str = '',end_date_min: str = '',end_date_max: str = '',group_product_rf: list = [],group_product_eaes: list = []
+        ],
     }
-    json_data['filter']['status'].extend(status)
-    json_data['filter']['idDeclType'].extend(type_decl)
-    json_data['filter']['idTechReg'].extend(tech_reg)
-    json_data['filter']['idApplicantType'].extend(zayvitel)
-    json_data['filter']['idCertObjectType'].extend(type_obj_decl)
-    json_data['filter']['idProductOrigin'].extend(proizhodenie_product)
-    json_data['filter']['idProductEEU'].extend(edini_perechen_product_eaes)
-    json_data['filter']['idProductRU'].extend(edini_perechen_product_rf)
-    json_data['filter']['idGroupRU'].extend(group_product_rf)
-    json_data['filter']['idGroupEEU'].extend(group_product_eaes)
-    json_data['filter']['regDate']['minDate'] = reg_date_min
-    json_data['filter']['regDate']['maxDate'] = reg_date_max
-    json_data['filter']['endDate']['minDate'] = end_date_min
-    json_data['filter']['endDate']['maxDate'] = end_date_max
+    json_data['filter']['status'].extend(Filters.status)
+    json_data['filter']['idCertType'].extend(Filters.type_decl)
+    json_data['filter']['idTechReg'].extend(Filters.tech_reg)
+    json_data['filter']['idApplicantType'].extend(Filters.zayvitel)
+    json_data['filter']['idCertObjectType'].extend(Filters.type_obj_decl)
+    json_data['filter']['idProductOrigin'].extend(Filters.proizhodenie_product)
+    json_data['filter']['idProductEEU'].extend(Filters.edini_perechen_product_eaes)
+    json_data['filter']['idProductRU'].extend(Filters.edini_perechen_product_rf)
+    json_data['filter']['idGroupRU'].extend(Filters.group_product_rf)
+    json_data['filter']['idGroupEEU'].extend(Filters.group_product_eaes)
+    json_data['filter']['regDate']['minDate'] = Filters.reg_date_min
+    json_data['filter']['regDate']['maxDate'] = Filters.reg_date_max
+    json_data['filter']['endDate']['minDate'] = Filters.end_date_min
+    json_data['filter']['endDate']['maxDate'] = Filters.end_date_max
 
     ua = UserAgent()
     headers['User-Agent'] = ua.random
@@ -233,7 +227,7 @@ def parser(count_requests: int, user_id: int, message_id: int, status: list = []
                             https=f'socks5://{proxi}')
             print(f"Делаем поисковой запрос с этим прокси {proxy_ye}")
             response = requests.post(
-                    'https://pub.fsa.gov.ru/api/v1/rds/common/declarations/get',
+                    'https://pub.fsa.gov.ru/api/v1/rss/common/certificates/get',
                     headers=headers,
                     json=json_data,
                 proxies=proxy_ye,verify=False
@@ -249,6 +243,8 @@ def parser(count_requests: int, user_id: int, message_id: int, status: list = []
             print(f'Какой прокси используем {proxy_ye}')
     flattens = []
     chetchik = 0
+    session = Session()
+    session.headers.update(headers)
     def start(item):
         break_count = 0
         nonlocal chetchik
@@ -301,46 +297,54 @@ def parser(count_requests: int, user_id: int, message_id: int, status: list = []
                 }
 
                 status_ = {}
-                status = {'Черновик': 20, 'Отправлен': 13, 'Удалён': 18, 'Действует': 6, 'Прекращён': 14, 'Приостановлен': 15,
-                 'Частично приостановлен': 19, 'Возобновлён': 3, 'Продлён': 16, 'Архивный': 1,
-                 'Направлено уведомление о прекращении': 10, 'Выдано предписание': 5, 'Ожидает проверки оператора реестра': 42,
-                 'Недействителен': 11}
-                for key,value in status.items():
+                status = {'Черновик': 20, 'Отправлен': 13, 'Удалён': 18, 'Действует': 6, 'Прекращён': 14,
+                          'Приостановлен': 15,
+                          'Частично приостановлен': 19, 'Возобновлён': 3, 'Продлён': 16, 'Архивный': 1,
+                          'Направлено уведомление о прекращении': 10, 'Выдано предписание': 5,
+                          'Ожидает проверки оператора реестра': 42,
+                          'Недействителен': 11}
+                for key, value in status.items():
                     status_[value] = key
                 id = item.get("id")
-                url = f'https://pub.fsa.gov.ru/rds/declaration/view/{id}/common' # ID(url)
-                type_declaration = item.get("declType") # Тип декларации
-                tech_reglament = item.get("technicalReglaments") # Технические регламенты
-                group_eac = item.get("group")  #Группа продукции ЕАЭС
-                scheme_decl = '' #Нужно с ещё одного апи брать инфу
-                dot = item.get("declObjectType") # Тип объекта декларирования
-                sd = status_[item.get('idStatus')] # Статус декларации
-                rnd = item.get('number') # Регистрационный номер декларации о соответствии
-                ddr = item.get('declDate') # Дата регистрации декларации
-                ddre = item.get('declEndDate') # Дата окончания действия декларации о соответствии
+                url = f'https://pub.fsa.gov.ru/rss/certificate/view/{id}/baseInfo'  # ID(url)
+                type_declaration = item.get("certType")  # Тип сертификации
+                tech_reglament = item.get("technicalReglaments")  # Технические регламенты
+                group_eac = item.get("group")  # Группа продукции ЕАЭС
+                scheme_decl = ''  # Нужно с ещё одного апи брать инфу
+                dot = item.get("certObjectType")  # Тип объекта декларирования
+                sd = status_[item.get('idStatus')]  # Статус декларации
+                rnd = item.get('number')  # Регистрационный номер декларации о соответствии
+                ddr = item.get('date')  # Дата регистрации декларации
+                ddre = item.get('endDate')  # Дата окончания действия декларации о соответствии
                 headers['User-Agent'] = ua.random
-                resp = requests.get(f'https://pub.fsa.gov.ru/api/v1/rds/common/declarations/{id}',headers=headers,verify=False,proxies=proxy_ye) # Делаем запрос к продукту
-                print(f'Запрос к продукту {resp}')
+                headers['Authorization'] = token
+                proxi = next(proxy)
+                proxy_ye = dict(http=f'socks5://{proxi}',
+                                https=f'socks5://{proxi}')
+                resp = session.get(f'https://pub.fsa.gov.ru/api/v1/rss/common/certificates/{id}', headers=headers,
+                                   verify=False, proxies=proxy_ye)  # Делаем запрос к продукту
                 resp = resp.json()
-                decl_id = resp.get('idDeclScheme')
-                if decl_id is not None:
-                    json_data_mult['items']['validationScheme2'][0]['id'].append(decl_id)
-                zayv = resp.get('applicant').get('shortName') # Заявитель
-                fzv = resp.get('applicant').get('fullName') #Полное наименование юридического лица
-                inn = item.get('creatorInn') # ИНН(заявитель)
-                ogrn = item.get('creatorOgrn') # ОГРН(-ИП)(заявитель)
+                sert_id = resp.get('idCertScheme')
+                if sert_id is not None:
+                    json_data_mult['items']['validationScheme2'][0]['id'].append(sert_id)
+                zayv = resp.get('applicant').get('shortName')  # Заявитель
+                fzv = resp.get('applicant').get('fullName')  # Полное наименование юридического лица
+                inn = resp.get('applicant').get('inn')  # ИНН(заявитель)
+                ogrn = resp.get('applicant').get('ogrn')  # ОГРН(-ИП)(заявитель)
                 amod = ''  # Адрес места осуществления деятельности
                 amn = ''  # Адрес места нахождения(заявитель)
-                addres = resp.get('applicant').get('addresses') # сайт отдает два адреса,понимаем какой из них amon и amn и добавляем в список # Не записываем в ексель
+                addres = resp.get('applicant').get(
+                    'addresses')  # сайт отдает два адреса,понимаем какой из них amon и amn и добавляем в список # Не записываем в ексель
                 for itemm_ in addres:
                     addr_type = itemm_.get('idAddrType')
                     if addr_type == 3:
                         amod = itemm_.get('fullAddress')
                     elif addr_type == 1:
                         amn = itemm_.get('fullAddress')
-                nomer = '' #Номер телефона(заявитель)
-                pochta = '' #Адрес электронной почты(заявитель)
-                tel_poc = resp.get('applicant').get('contacts')  # сайт отдает телефон и почту,понимаем какой из них nomer и pochta и добавляем в список # Не записываем в ексель
+                nomer = ''  # Номер телефона(заявитель)
+                pochta = ''  # Адрес электронной почты(заявитель)
+                tel_poc = resp.get('applicant').get(
+                    'contacts')  # сайт отдает телефон и почту,понимаем какой из них nomer и pochta и добавляем в список # Не записываем в ексель
                 for itemm_ in tel_poc:
                     addr_type = itemm_.get('idContactType')
                     if addr_type == 1:
@@ -348,28 +352,32 @@ def parser(count_requests: int, user_id: int, message_id: int, status: list = []
                     elif addr_type == 4:
                         pochta = itemm_.get('value')
 
-                full_name = item.get('manufacterName') #Полное наименование
-                inn_izgotovitel = resp.get('manufacturer').get('inn') # ИНН(изготовитель)
-                adr_izg = [] #Адрес места нахождения(иготовитель)
-                adrs_izg_no_ex = resp.get('manufacturer').get('addresses') #АДРЕСЫ места нахождения(изготовителя) Не записываем это в ексель!
+                full_name = item.get('manufacterName')  # Полное наименование
+                inn_izgotovitel = resp.get('manufacturer').get('inn')  # ИНН(изготовитель)
+                adr_izg = []  # Адрес места нахождения(иготовитель)
+                adrs_izg_no_ex = resp.get('manufacturer').get(
+                    'addresses')  # АДРЕСЫ места нахождения(изготовителя) Не записываем это в ексель!
                 for itemm_ in adrs_izg_no_ex:
                     adr_izg.append(itemm_.get('fullAddress'))
                 adr_izg = list(map(lambda x: '' if x is None else x, adr_izg))
                 adr_izg = '|'.join(adr_izg)
 
-                adr_proizv_pr = [] # Адрес производства продукции
-                adrs_proizv_pr = resp.get('manufacturerFilials') # АДРЕСЫ производства продукции Не записываем в ексель
+                adr_proizv_pr = []  # Адрес производства продукции
+                adrs_proizv_pr = resp.get(
+                    'manufacturerFilials')  # АДРЕСЫ производства продукции Не записываем в ексель
                 for itemm_ in adrs_proizv_pr:
-                    adrs = itemm_.get('addresses') # АДРЕСЫ ЕЩЁ ГЛУБЖЕ производства продукции Не записываем в ексель
+                    adrs = itemm_.get(
+                        'addresses')  # АДРЕСЫ ЕЩЁ ГЛУБЖЕ производства продукции Не записываем в ексель
                     for itemm__ in adrs:
                         adr_proizv_pr.append(itemm__.get('fullAddress'))
 
                 adr_proizv_pr = list(map(lambda x: '' if x is None else x, adr_proizv_pr))
-                adr_proizv_pr = '|'.join(adr_proizv_pr) #Адрес производства продукции
+                adr_proizv_pr = '|'.join(adr_proizv_pr)  # Адрес производства продукции
 
                 nomer_izg = ''  # Номер телефона(иготовитель)
                 pochta_izg = ''  # Адрес электронной почты(иготовитель)
-                tel_poc_izg = resp.get('manufacturer') if resp.get('manufacturer') else []  # сайт отдает телефон и почту,понимаем какой из них nomer и pochta и добавляем в список # Не записываем в ексель
+                tel_poc_izg = resp.get('manufacturer') if resp.get(
+                    'manufacturer') else []  # сайт отдает телефон и почту,понимаем какой из них nomer и pochta и добавляем в список # Не записываем в ексель
                 for itemm_ in tel_poc_izg.get('contacts'):
                     addr_type = itemm_.get('idContactType')
                     if addr_type == 1:
@@ -377,8 +385,7 @@ def parser(count_requests: int, user_id: int, message_id: int, status: list = []
                     elif addr_type == 4:
                         pochta_izg = itemm_.get('value')
 
-
-                idcct = [] # Продукция, ввезена для проведения исследований и испытаний в качестве проб (образцов) для целей подтверждения соответствия? idcct - idDocConfirmCustomType
+                idcct = []  # Продукция, ввезена для проведения исследований и испытаний в качестве проб (образцов) для целей подтверждения соответствия? idcct - idDocConfirmCustomType
 
                 labs = resp.get('testingLabs')
                 for lab in labs:
@@ -391,25 +398,26 @@ def parser(count_requests: int, user_id: int, message_id: int, status: list = []
                 idcct = list(map(lambda x: '' if x is None else x, idcct))
                 idcct = '|'.join(idcct)
 
-                rntd  = [] # Регистрационный номер таможенной декларации
-                labs = resp.get('testingLabs') # Лабы
+                rntd = []  # Регистрационный номер таможенной декларации
+                labs = resp.get('testingLabs')  # Лабы
                 for lab in labs:
                     pole = lab.get('docConfirmCustom')
                     for pole_ in pole:
                         pole_ = pole_.get('customInfo')
                         for pole1 in pole_:
-                            reg_nomer_tamozh_decl = pole1.get('customDeclNumber')#reg_nomer_tamozh_decl
+                            reg_nomer_tamozh_decl = pole1.get('customDeclNumber')  # reg_nomer_tamozh_decl
                             rntd.append(reg_nomer_tamozh_decl)
 
                 rntd = list(map(lambda x: '' if x is None else x, rntd))
-                rntd  = '|'.join(rntd)
+                rntd = '|'.join(rntd)
 
-                obsh_np = resp.get('product').get('fullName') #Общее наименование продукции
-                obsh_u_xp = resp.get('product').get('storageCondition') #Общие условия хранения продукции
-                proiz_country = '' # Происхождение продукции
-                proiz_country = dct_country[resp.get('product').get('idProductOrigin')] #Происхождение продукции
-                razmer_p = resp.get('product').get('batchSize') # Размер партии
-                id_tn_ved = resp.get('product').get('identifications') #Код ТН ВЭД ЕАЭС # НЕ ЗАПИСЫВАЕМ ЭТО ПОЛЕ В ЕКСЕЛЬ
+                obsh_np = resp.get('product').get('fullName')  # Общее наименование продукции
+                obsh_u_xp = resp.get('product').get('storageCondition')  # Общие условия хранения продукции
+                proiz_country = ''  # Происхождение продукции
+                proiz_country = dct_country[resp.get('product').get('idProductOrigin')]  # Происхождение продукции
+                razmer_p = resp.get('product').get('batchSize')  # Размер партии
+                id_tn_ved = resp.get('product').get(
+                    'identifications')  # Код ТН ВЭД ЕАЭС # НЕ ЗАПИСЫВАЕМ ЭТО ПОЛЕ В ЕКСЕЛЬ
                 tnved = []
                 ids = []
                 for i in id_tn_ved:
@@ -417,12 +425,11 @@ def parser(count_requests: int, user_id: int, message_id: int, status: list = []
                     ids.extend(id)
                 json_data_mult['items']['tnved'][0]['id'].extend(ids)
                 headers['User-Agent'] = ua.random
+                headers['Authorization'] = token
                 proxi = next(proxy)
-                proxy_ye = dict(http=f'socks5://{proxi}',
-                                https=f'socks5://{proxi}')
-
-                mult_resp = requests.post('https://pub.fsa.gov.ru/nsi/api/multi', headers=headers, json=json_data_mult,verify=False,proxies=proxy_ye)
-                print(f'mult resp {mult_resp}')
+                proxy_ye = dict(http=f'socks5://{proxi}', https=f'socks5://{proxi}')
+                mult_resp = session.post('https://pub.fsa.gov.ru/nsi/api/multi', headers=headers,
+                                         json=json_data_mult, verify=False, proxies=proxy_ye)
                 mult_resp = mult_resp.json()
                 tnved_no = [] if mult_resp.get('tnved') is None else mult_resp.get('tnved')
                 for i in tnved_no:
@@ -432,30 +439,35 @@ def parser(count_requests: int, user_id: int, message_id: int, status: list = []
                     scheme_decl = i.get('name')
                 tnved = list(map(lambda x: '' if x is None else x, tnved))
                 tnved = '|'.join(tnved)
-                name_production_ = [] #Наименование (обозначение) продукции
+                name_production_ = []  # Наименование (обозначение) продукции
                 np1_ = resp.get('product').get('identifications')
                 for pole in np1_:
                     name_production_.append(pole.get('name'))
-                name_production_  = list(map(lambda x: '' if x is None else x, name_production_ ))
-                name_production_ = '|'.join(name_production_) #Наименование (обозначение) продукции
+                name_production_ = list(map(lambda x: '' if x is None else x, name_production_))
+                name_production_ = '|'.join(name_production_)  # Наименование (обозначение) продукции
 
-                name_document = [] #Наименование документа
+                name_document = []  # Наименование документа
                 nd_ = resp.get('product').get('identifications')
                 for pole in nd_:
                     document = pole.get('documents')
                     for poledoc in document:
                         name_document.append(poledoc.get('name'))
 
-                name_document = list(map(lambda x:'' if x is None else x,name_document))
+                name_document = list(map(lambda x: '' if x is None else x, name_document))
                 name_document = '|'.join(name_document)
 
-                statustestinglabs = item.get('statusTestingLabs') #Испытания продукции
+                statustestinglabs = item.get('statusTestingLabs')  # Испытания продукции
                 name_lab_testing = []
                 nlt1_ = resp.get('testingLabs')
                 for lab in nlt1_:
                     name_lab_testing.append(lab.get('fullName'))
                 name_lab_testing = list(map(lambda x: '' if x is None else x, name_lab_testing))
                 name_lab_testing = '|'.join(name_lab_testing)
+
+                fio = " ".join(list(map(lambda x: '' if x is None else x, (
+                resp.get("applicant").get("surname"), resp.get("applicant").get("firstName"),
+                resp.get("applicant").get("patronymic")))))
+
                 flattens.append([url, type_declaration, tech_reglament, group_eac, scheme_decl, dot, sd, rnd, ddr, ddre,
                                 zayv, fzv, inn, ogrn, amod, amn, nomer, pochta, full_name, inn_izgotovitel, adr_izg,
                                 adr_proizv_pr, nomer_izg, pochta_izg, idcct, rntd, obsh_np, obsh_u_xp, proiz_country,
@@ -470,6 +482,7 @@ def parser(count_requests: int, user_id: int, message_id: int, status: list = []
                 time.sleep(0.5)
                 break
             except Exception as ex:
+                print(ex)
                 proxi = next(proxy)
                 time.sleep(3)
                 break_count += 1
@@ -478,7 +491,7 @@ def parser(count_requests: int, user_id: int, message_id: int, status: list = []
                 RabbitMQ.send_status(
                     chat_id=user_id,
                     message_id=message_id,
-                    message=f'Возникла ошибка в запросе к декларации {url} {traceback.format_exc()}'
+                    message=f'Возникла ошибка в запросе к сертифкату {url} {traceback.format_exc()}'
                 )
 
     list_ = items  # сюда вставляешь то что прогоняешь через фор смотри где больше ссылок собрано
