@@ -217,6 +217,7 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
     json_data['filter']['regDate']['maxDate'] = Filters.reg_date_max
     json_data['filter']['endDate']['minDate'] = Filters.end_date_min
     json_data['filter']['endDate']['maxDate'] = Filters.end_date_max
+    json_data['filter']['columnsSearch'].extend(Filters.row_sertificate)
 
     ua = UserAgent()
     headers['User-Agent'] = ua.random

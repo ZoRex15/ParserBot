@@ -18,3 +18,4 @@ class FiltersDTO:
     end_date_max: str = ''
     group_product_rf: List[str] = field(default_factory=list)
     group_product_eaes: List[str] = field(default_factory=list)
+    row_sertificate: str = ''
