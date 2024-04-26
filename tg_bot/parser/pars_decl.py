@@ -231,6 +231,7 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
                     json=json_data,
                 proxies=proxy_ye,verify=False
             )
+            logger.debug(f'Наш body {json_data}')
             logger.info(f'Поисковой запрос {response}')
             items = response.json().get('items',[])
             break
