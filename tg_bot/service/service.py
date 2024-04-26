@@ -54,11 +54,12 @@ class Database:
                 result = cursor.fetchall()
                 if not result:
                     parser_settings[i[1]] = []
+                elif i[1] in ('Дата регестрации', 'Дата окончания'):
+                    parser_settings[i[1]] = [j[0] for j in result][0]
+                elif i[1] == 'Номер сертификата':
+                    parser_settings[i[1]] = [j[0] for j in result]
                 else:
-                    if i[1] in ('Дата регестрации', 'Дата окончания'):
-                        parser_settings[i[1]] = [j[0] for j in result][0]
-                    else:
-                        parser_settings[i[1]] = [j[1] for j in result]
+                    parser_settings[i[1]] = [j[1] for j in result]
             return parser_settings
            
     def clear_all_filters(self, user_id: int):
