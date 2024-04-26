@@ -4,11 +4,14 @@ import time
 from anti_useragent import UserAgent
 import xlsxwriter
 import urllib3
+import traceback
 from itertools import cycle
+from loguru import logger
+
 from tg_bot.service.service import RabbitMQ
 from tg_bot.dto import FiltersDTO
-import traceback
 
+logger.add('decl.log', format="{time} {level} {message}", level='DEBUG', rotation='10 MB', compression='zip')
 
 urllib3.disable_warnings()
 column = [
@@ -61,7 +64,7 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
         proxyy_ = list(map(lambda x: x.strip(), file.readlines()[1:]))
     proxy = cycle(proxyy_)
     def get_token():
-        print('запустили функцию для получения токена')
+        logger.info('запустили функцию для получения токена')
         start = time.perf_counter()
         while True:
             try:
@@ -102,11 +105,11 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
                                          json=json_data_token,proxies=proxy_ye)
                 token = response.headers.get('Authorization')
                 if token:
-                    print(f'Успешно получили токен {token}')
+                    logger.info(f'Успешно получили токен {token}')
                     token = response.headers.get('Authorization')
                     return token
                 else:
-                    print('Не получили токен')
+                    logger.info('Не получили токен')
                     time.sleep(3)
             except Exception as error:
                 RabbitMQ.send_status(
@@ -114,7 +117,7 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
                     message_id=message_id,
                     message='Возникла ошибка в получении токена'
                 )
-                print(f'Возникла ошибка в получении токена {error}',traceback.format_exc())
+                logger.info(f'Возникла ошибка в получении токена {error}',traceback.format_exc())
                 time.sleep(3)
 
     token = get_token()
@@ -150,9 +153,6 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
     }
 
     headers['Authorization'] = token
-    print(headers['Authorization'])
-    #with open('tg_bot/parser/col.txt','r',encoding='utf-8') as file:
-        #col = file.readlines()[0]
     json_data = {
         'size': Filters.count_requests,
         'page': 0,
@@ -212,7 +212,9 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
     json_data['filter']['regDate']['maxDate'] = Filters.reg_date_max
     json_data['filter']['endDate']['minDate'] = Filters.end_date_min
     json_data['filter']['endDate']['maxDate'] = Filters.end_date_max
-    json_data['filter']['columnsSearch'].extend(Filters.row_sertificate)
+    json_data['filter']['columnsSearch'].extend({'search': Filters.row_sertificate,
+                                                 'name': "number",
+                                                 "type": 9})
 
     ua = UserAgent()
     headers['User-Agent'] = ua.random
@@ -221,22 +223,20 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
             proxi = next(proxy)
             proxy_ye = dict(http=f'socks5://{proxi}',
                             https=f'socks5://{proxi}')
-            print(f"Делаем поисковой запрос с этим прокси {proxy_ye}")
+            logger.info(f"Делаем поисковой запрос с этим прокси {proxy_ye}")
             response = requests.post(
                     'https://pub.fsa.gov.ru/api/v1/rds/common/declarations/get',
                     headers=headers,
                     json=json_data,
                 proxies=proxy_ye,verify=False
             )
-            print('Поисковой запрос',response)
-            items = response.json().get('items')
+            logger.info('Поисковой запрос',response)
+            items = response.json().get('items',[])
             break
         except Exception as ex:
             proxi = next(proxy)
             time.sleep(1)
-            print(ex)
-            print('error у поискового запроса',traceback.format_exc())
-            print(f'Какой прокси используем {proxy_ye}')
+            logger.info(f'error у поискового запроса {ex}')
     flattens = []
     chetchik = 0
     count_requests = Filters.count_requests
@@ -310,7 +310,7 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
                 ddre = item.get('declEndDate') # Дата окончания действия декларации о соответствии
                 headers['User-Agent'] = ua.random
                 resp = requests.get(f'https://pub.fsa.gov.ru/api/v1/rds/common/declarations/{id}',headers=headers,verify=False,proxies=proxy_ye) # Делаем запрос к продукту
-                print(f'Запрос к продукту {resp}')
+                logger.info(f'Запрос к продукту {resp}')
                 resp = resp.json()
                 decl_id = resp.get('idDeclScheme')
                 if decl_id is not None:
@@ -412,7 +412,7 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
                                 https=f'socks5://{proxi}')
 
                 mult_resp = requests.post('https://pub.fsa.gov.ru/nsi/api/multi', headers=headers, json=json_data_mult,verify=False,proxies=proxy_ye)
-                print(f'mult resp {mult_resp}')
+                logger.info(f'mult resp {mult_resp}')
                 mult_resp = mult_resp.json()
                 tnved_no = [] if mult_resp.get('tnved') is None else mult_resp.get('tnved')
                 for i in tnved_no:
@@ -451,7 +451,7 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
                                 adr_proizv_pr, nomer_izg, pochta_izg, idcct, rntd, obsh_np, obsh_u_xp, proiz_country,
                                 razmer_p,tnved,name_production_,name_document,statustestinglabs,name_lab_testing])
                 chetchik += 1
-                print(f'{chetchik}/{count_requests}')
+                logger.info(f'{chetchik}/{count_requests}')
                 RabbitMQ.send_status(
                     chat_id=user_id,
                     message_id=message_id,
@@ -460,6 +460,7 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
                 time.sleep(0.5)
                 break
             except Exception as ex:
+                logger.error(f'Ошибка при запросе и парсинге декларации {ex}')
                 proxi = next(proxy)
                 time.sleep(3)
                 break_count += 1
@@ -472,8 +473,9 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
                 )
 
     list_ = items  # сюда вставляешь то что прогоняешь через фор смотри где больше ссылок собрано
-    print('Сейчас начнем')
     # print(len(list_))
+    if not items:
+        logger.debug('Нету данных в items!')
     for it in items:
         start(it)
     date = datetime.date.today().strftime("%Y%m%d")
