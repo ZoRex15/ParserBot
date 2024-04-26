@@ -3,18 +3,16 @@ import requests
 from requests import Session
 import time
 from anti_useragent import UserAgent
-import json
-from pprint import pprint
 import xlsxwriter
 import urllib3
-import concurrent.futures
+from loguru import logger
 from itertools import cycle
 import traceback
 
 from tg_bot.dto import FiltersDTO
 from tg_bot.service.service import RabbitMQ
 
-
+logger.add('cert.log', format="{time} {level} {message}", level='DEBUG', rotation='10 MB', compression='zip')
 urllib3.disable_warnings()
 column = [
  'ID','Тип декларации','Технические регламенты','Группа продукции ЕАЭС','Схема декларирования',	'Тип объекта декларирования',	'Статус декларации',	'Регистрационный номер декларации о соответствии',	'Дата регистрации декларации'	,'Дата окончания действия декларации о соответствии',	'Заявитель','Полное наименование юридического лица',	'ИНН(заявитель)',	'ОГРН(-ИП)(заявитель)',	'Адрес места осуществления деятельности',	'Адрес места нахождения(заявитель)',	'Номер телефона(заявитель)',	'Адрес электронной почты(заявитель)',	'Полное наименование','ИНН(иготовитель)',	'Адрес места нахождения(иготовитель)',	'Адрес производства продукции',	'Номер телефона(иготовитель)',	'Адрес электронной почты(иготовитель)',	'Продукция, ввезена для проведения исследований и испытаний в качестве проб (образцов) для целей подтверждения соответствия?',	'Регистрационный номер таможенной декларации',	'Общее наименование продукции',	'Общие условия хранения продукции',	'Происхождение продукции',	'Размер партии',	'Код ТН ВЭД ЕАЭС',	'Наименование (обозначение) продукции',	'Наименование документа',	'Испытания продукции',	'Наименование испытательной лаборатории'
@@ -67,7 +65,7 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
         proxyy_ = list(map(lambda x: x.strip(), file.readlines()[1:]))
     proxy = cycle(proxyy_)
     def get_token():
-        print('запустили функцию для получения токена')
+        logger.info('запустили функцию для получения токена')
         start = time.perf_counter()
         while True:
             try:
@@ -108,11 +106,11 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
                                          json=json_data_token,proxies=proxy_ye)
                 token = response.headers.get('Authorization')
                 if token:
-                    print(f'Успешно получили токен {token}')
+                    logger.info(f'Успешно получили токен {token}')
                     token = response.headers.get('Authorization')
                     return token
                 else:
-                    print('Не получили токен')
+                    logger.info('Не получили токен')
                     time.sleep(3)
             except Exception as error:
                 RabbitMQ.send_status(
@@ -120,7 +118,7 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
                     message_id=message_id,
                     message='Возникла ошибка в получении токена'
                 )
-                print(f'Возникла ошибка в получении токена {error}',traceback.format_exc())
+                logger.info(f'Возникла ошибка в получении токена {error}')
                 time.sleep(3)
 
     token = get_token()
@@ -156,7 +154,6 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
     }
 
     headers['Authorization'] = token
-    print(headers['Authorization'])
     #with open('tg_bot/parser/col.txt','r',encoding='utf-8') as file:
         #col = file.readlines()[0]
     json_data = {
@@ -217,7 +214,9 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
     json_data['filter']['regDate']['maxDate'] = Filters.reg_date_max
     json_data['filter']['endDate']['minDate'] = Filters.end_date_min
     json_data['filter']['endDate']['maxDate'] = Filters.end_date_max
-    json_data['filter']['columnsSearch'].extend(Filters.row_sertificate)
+    json_data['filter']['columnsSearch'].extend({'search': Filters.row_sertificate,
+                                                 'name': "number",
+                                                 "type": 9})
 
     ua = UserAgent()
     headers['User-Agent'] = ua.random
@@ -226,22 +225,20 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
             proxi = next(proxy)
             proxy_ye = dict(http=f'socks5://{proxi}',
                             https=f'socks5://{proxi}')
-            print(f"Делаем поисковой запрос с этим прокси {proxy_ye}")
+            logger.info(f"Делаем поисковой запрос с этим прокси {proxy_ye}")
             response = requests.post(
                     'https://pub.fsa.gov.ru/api/v1/rss/common/certificates/get',
                     headers=headers,
                     json=json_data,
                 proxies=proxy_ye,verify=False
             )
-            print('Поисковой запрос',response)
-            items = response.json().get('items')
+            logger.info('Поисковой запрос',response)
+            items = response.json().get('items',[])
             break
         except Exception as ex:
             proxi = next(proxy)
             time.sleep(1)
-            print(ex)
-            print('error у поискового запроса',traceback.format_exc())
-            print(f'Какой прокси используем {proxy_ye}')
+            logger.error('error у поискового запроса {ex}')
     flattens = []
     chetchik = 0
     session = Session()
@@ -474,7 +471,7 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
                                 adr_proizv_pr, nomer_izg, pochta_izg, idcct, rntd, obsh_np, obsh_u_xp, proiz_country,
                                 razmer_p,tnved,name_production_,name_document,statustestinglabs,name_lab_testing])
                 chetchik += 1
-                print(f'{chetchik}/{count_requests}')
+                logger.info(f'{chetchik}/{count_requests}')
                 RabbitMQ.send_status(
                     chat_id=user_id,
                     message_id=message_id,
@@ -483,7 +480,7 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
                 time.sleep(0.5)
                 break
             except Exception as ex:
-                print(ex)
+                logger.error(f'Ошибка при парсинге сертификата {ex}')
                 proxi = next(proxy)
                 time.sleep(3)
                 break_count += 1
@@ -495,11 +492,13 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
                     message=f'Возникла ошибка в запросе к сертифкату {url} {traceback.format_exc()}'
                 )
 
-    list_ = items  # сюда вставляешь то что прогоняешь через фор смотри где больше ссылок собрано
-    print('Сейчас начнем')
-    # print(len(list_))
+
+    if not items:
+        logger.debug('Нету данных в items! ')
+
     for it in items:
         start(it)
+
     date = datetime.date.today().strftime("%Y%m%d")
     workbook = xlsxwriter.Workbook(f"output{user_id}.xlsx")
     worksheet = workbook.add_worksheet()
