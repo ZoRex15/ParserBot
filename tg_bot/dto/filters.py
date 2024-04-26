@@ -4,8 +4,6 @@ from typing import List
 @dataclass
 class FiltersDTO:
     count_requests: int
-    user_id: int
-    message_id: int
     status: List[str] = field(default_factory=list)
     zayvitel: List[str] = field(default_factory=list)
     tech_reg: List[str] = field(default_factory=list)
