@@ -34,6 +34,9 @@ class UnifiedListOfEAEUProductsSG(StatesGroup):
 class SingleListOfProductsOfTheRussianFederation(StatesGroup):
     choice_a_single_list_of_products_of_the_russian_federation = State()
 
+class NumberCertificate(StatesGroup):
+    choise_number_certificate = State()
+
 class InputDataSG(StatesGroup):
     menu = State()
     input_data_regestration = State()

@@ -4,7 +4,7 @@ from aiogram import Router
 from aiogram_dialog import DialogManager, StartMode
 from aiogram_dialog.widgets.kbd import Button
 
-from states import StartSG, MainMenuSG
+from tg_bot.states import StartSG, MainMenuSG
 
 router = Router()
 

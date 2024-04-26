@@ -6,8 +6,8 @@ import xlsxwriter
 import urllib3
 from itertools import cycle
 from tg_bot.service.service import RabbitMQ
-from tg_bot.dto import FiltersDTO
 import traceback
+from tg_bot.dto import FiltersDTO
 
 
 urllib3.disable_warnings()

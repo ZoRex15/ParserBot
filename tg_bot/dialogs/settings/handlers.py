@@ -3,7 +3,7 @@ from aiogram_dialog.widgets.kbd import Button, Select
 from aiogram_dialog.widgets.input import ManagedTextInput, MessageInput
 from aiogram_dialog import DialogManager, StartMode
 
-from states import (StatusSG,
+from tg_bot.states import (StatusSG,
                     TypeOfDeclarationSG,
                     TypeOfObjectDeclarationSG, 
                     TypeOfTheApplicant, 
@@ -13,10 +13,11 @@ from states import (StatusSG,
                     SingleListOfProductsOfTheRussianFederation,
                     InputDataSG,
                     GroupsOfProductsOfTheRussianFederation,
-                    GroupsOfProductsOfTheEAEU
+                    GroupsOfProductsOfTheEAEU,
+                    NumberCertificate
                     )
-from service.service import Database
-from lexicon import *
+from tg_bot.service import Database
+from tg_bot.lexicon import *
 from typing import Any
 from datetime import date
 
@@ -60,12 +61,51 @@ async def groups_of_products_of_the_russian_federation(callback: CallbackQuery, 
 
 async def groups_of_products_of_the_eaeu(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     await dialog_manager.start(state=GroupsOfProductsOfTheEAEU.choice_groups_of_products_of_the_eaeu)
+
+async def go_to_number_certificate(
+    callback: CallbackQuery,
+    button: Button,
+    dialog_manager: DialogManager
+):
+    await dialog_manager.start(state=NumberCertificate.choise_number_certificate)
+
+def is_text(
+    text: str
+):
+    if isinstance(text, str):
+        return text
+    else:
+        raise ValueError
+    
+async def correct_certificate(
+    message: Message,
+    widget: ManagedTextInput,
+    dialog_manager: DialogManager,
+    text: str
+):
+    db: Database = dialog_manager.middleware_data.get('db')
+    db.set_filter(
+        user_id=message.from_user.id,
+        setting_name='Номер сертификата',
+        filter=text
+    )
+    
+async def error_certificate(
+    message: Message,
+    widget: ManagedTextInput,
+    dialog_manager: DialogManager,
+    error: ValueError
+):
+    await message.answer('Ошибка. Попробуйте ещё раз')
+    
+
  
 async def back(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     await dialog_manager.done()
 
 async def clear_filters(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
-    Database.clear_filters(
+    db: Database = dialog_manager.middleware_data.get('db')
+    db.clear_filters(
         user_id=callback.from_user.id,
         setting_id=callback.data.split('_')[-1]
     )
@@ -73,8 +113,8 @@ async def clear_filters(callback: CallbackQuery, button: Button, dialog_manager:
 
 async def set_status(callback: CallbackQuery, widget: Select,
                              dialog_manager: DialogManager, item_id: str):
-    
-    Database.set_filter(user_id=callback.from_user.id,
+    db: Database = dialog_manager.middleware_data.get('db')
+    db.set_filter(user_id=callback.from_user.id,
                         setting_name='Статус',
                         filter=STATUS[item_id],
                         filter_id=item_id)
@@ -82,7 +122,8 @@ async def set_status(callback: CallbackQuery, widget: Select,
 
 async def set_type_of_declaration(callback: CallbackQuery, widget: Select,
                              dialog_manager: DialogManager, item_id: str):
-    Database.set_filter(user_id=callback.from_user.id,
+    db: Database = dialog_manager.middleware_data.get('db')
+    db.set_filter(user_id=callback.from_user.id,
                         setting_name='Тип декларации',
                         filter=TYPE_OF_DECLARATION[item_id],
                         filter_id=item_id)
@@ -90,7 +131,8 @@ async def set_type_of_declaration(callback: CallbackQuery, widget: Select,
 
 async def set_type_of_object_declaration(callback: CallbackQuery, widget: Select,
                              dialog_manager: DialogManager, item_id: str):
-    Database.set_filter(user_id=callback.from_user.id,
+    db: Database = dialog_manager.middleware_data.get('db')
+    db.set_filter(user_id=callback.from_user.id,
                         setting_name='Тип объекта декларирования',
                         filter=TYPE_OF_OBJECT_DECLARATION[item_id],
                         filter_id=item_id)
@@ -98,7 +140,8 @@ async def set_type_of_object_declaration(callback: CallbackQuery, widget: Select
 
 async def set_type_of_the_applican(callback: CallbackQuery, widget: Select,
                                    dialog_manager: DialogManager, item_id: str):
-    Database.set_filter(user_id=callback.from_user.id,
+    db: Database = dialog_manager.middleware_data.get('db')
+    db.set_filter(user_id=callback.from_user.id,
                         setting_name='Вид заявителя',
                         filter=TYPE_OF_THE_APPLICAN[item_id],
                         filter_id=item_id)
@@ -106,8 +149,8 @@ async def set_type_of_the_applican(callback: CallbackQuery, widget: Select,
 
 async def set_tech_reg(callback: CallbackQuery, button: Button,
                         dialog_manager: DialogManager):
-    
-    Database.set_filter(
+    db: Database = dialog_manager.middleware_data.get('db')
+    db.set_filter(
         user_id=callback.from_user.id,
         setting_name='Технический регламент',
         filter=TECH_REG[callback.data],
@@ -117,7 +160,8 @@ async def set_tech_reg(callback: CallbackQuery, button: Button,
 
 async def set_the_origin_of_the_product(callback: CallbackQuery, button: Button,
                         dialog_manager: DialogManager):
-    Database.set_filter(
+    db: Database = dialog_manager.middleware_data.get('db')
+    db.set_filter(
         user_id=callback.from_user.id,
         setting_name='Происхождение продукции',
         filter=COUNTRY[callback.data],
@@ -127,7 +171,8 @@ async def set_the_origin_of_the_product(callback: CallbackQuery, button: Button,
 
 async def set_unified_list_of_eaeu_products(callback: CallbackQuery, button: Button,
                         dialog_manager: DialogManager):
-    Database.set_filter(
+    db: Database = dialog_manager.middleware_data.get('db')
+    db.set_filter(
         user_id=callback.from_user.id,
         setting_name='Единый перечень продукции ЕАЭС',
         filter=UNIFIED_LIST_OF_EAEU_PRODUCTS[callback.data],
@@ -137,7 +182,8 @@ async def set_unified_list_of_eaeu_products(callback: CallbackQuery, button: But
 
 async def set_a_single_list_of_products_of_the_russian_federation(callback: CallbackQuery, button: Button,
                         dialog_manager: DialogManager):
-    Database.set_filter(
+    db: Database = dialog_manager.middleware_data.get('db')
+    db.set_filter(
         user_id=callback.from_user.id,
         setting_name='Единый перечень продукции РФ',
         filter=A_SINGLE_LIST_OF_PRODUCTS_OF_THE_RUSSIAN_FEDERATION[callback.data],
@@ -159,11 +205,12 @@ async def set_regestration_date(
         dialog_manager: DialogManager,
         text: str
 ):
-    Database.clear_filters(
+    db: Database = dialog_manager.middleware_data.get('db')
+    db.clear_filters(
         user_id=message.from_user.id,
         setting_id='9'
     )
-    Database.set_filter(
+    db.set_filter(
         user_id=message.from_user.id,
         setting_name='Дата регестрации',
         filter=message.text
@@ -176,11 +223,12 @@ async def set_date_end(
         dialog_manager: DialogManager,
         text: str
 ):
-    Database.clear_filters(
+    db: Database = dialog_manager.middleware_data.get('db')
+    db.clear_filters(
         user_id=message.from_user.id,
         setting_id='10'
     )
-    Database.set_filter(
+    db.set_filter(
         user_id=message.from_user.id,
         setting_name='Дата окончания',
         filter=message.text
@@ -202,11 +250,12 @@ async def back_to_input_data_menu(callback: CallbackQuery, button: Button, dialo
     await dialog_manager.switch_to(InputDataSG.menu)
 
 async def clear_date_filters(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
-    Database.clear_filters(
+    db: Database = dialog_manager.middleware_data.get('db')
+    db.clear_filters(
         user_id=callback.from_user.id,
         setting_id='9'
     )
-    Database.clear_filters(
+    db.clear_filters(
         user_id=callback.from_user.id,
         setting_id='10'
     )
@@ -214,7 +263,8 @@ async def clear_date_filters(callback: CallbackQuery, button: Button, dialog_man
 
 async def set_groups_of_products_of_the_russian_federation(callback: CallbackQuery, button: Button,
                         dialog_manager: DialogManager):
-    Database.set_filter(
+    db: Database = dialog_manager.middleware_data.get('db')
+    db.set_filter(
         user_id=callback.from_user.id,
         setting_name='Группы продукции РФ',
         filter=GROUPS_OF_PRODUCTS_OF_THE_RUSSIAN_FEDERATION[callback.data],
@@ -224,7 +274,8 @@ async def set_groups_of_products_of_the_russian_federation(callback: CallbackQue
 
 async def set_groups_of_products_of_the_eaeu(callback: CallbackQuery, button: Button,
                         dialog_manager: DialogManager):
-    Database.set_filter(
+    db: Database = dialog_manager.middleware_data.get('db')
+    db.set_filter(
         user_id=callback.from_user.id,
         setting_name='Группы продукции ЕАЭС',
         filter=GROUPS_OF_PRODUCTS_OF_THE_EAEU[callback.data],

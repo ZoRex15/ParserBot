@@ -5,7 +5,7 @@ from aiogram_dialog.widgets.kbd import Button, Row, ScrollingGroup, Group, Selec
 from aiogram_dialog.widgets.input import TextInput, MessageInput
 import operator
 
-from states import (SettingsSG, 
+from tg_bot.states import (SettingsSG, 
                     StatusSG, 
                     TypeOfDeclarationSG, 
                     TypeOfObjectDeclarationSG, 
@@ -16,7 +16,8 @@ from states import (SettingsSG,
                     SingleListOfProductsOfTheRussianFederation,
                     InputDataSG,
                     GroupsOfProductsOfTheRussianFederation,
-                    GroupsOfProductsOfTheEAEU
+                    GroupsOfProductsOfTheEAEU,
+                    NumberCertificate
                     )
 
 from .handlers import (
@@ -51,7 +52,11 @@ from .handlers import (
     set_groups_of_products_of_the_russian_federation,
     groups_of_products_of_the_russian_federation,
     set_groups_of_products_of_the_eaeu,
-    groups_of_products_of_the_eaeu
+    groups_of_products_of_the_eaeu,
+    is_text,
+    correct_certificate,
+    error_certificate,
+    go_to_number_certificate
     
 )
 from .getters import (
@@ -71,7 +76,8 @@ from .getters import (
     create_keyboard_groups_of_products_of_the_russian_federation,
     get_groups_of_products_of_the_russian_federation,
     get_groups_of_products_of_the_eaeu,
-    create_keyboard_groups_of_products_of_the_eaeu
+    create_keyboard_groups_of_products_of_the_eaeu,
+    get_selected_number_catertificates
     
     )
 
@@ -128,7 +134,12 @@ dialog_settings = Dialog(
                 Button(
                     text=Const('Группы продукции ЕАЭС'),
                     id='groups_of_products_of_the_eaeu',
-                    on_click=groups_of_products_of_the_eaeu)
+                    on_click=groups_of_products_of_the_eaeu),
+                Button(
+                    text=Const('Номер сертификата'),
+                    id='certificate_number',
+                    on_click=go_to_number_certificate
+                )
             ),
         Button(text=Const('Назад'),
                    id='back',
@@ -427,4 +438,26 @@ groups_of_products_of_the_eaeu_dialog = Dialog(
         getter=get_groups_of_products_of_the_eaeu,
         state=GroupsOfProductsOfTheEAEU.choice_groups_of_products_of_the_eaeu
     )
+)
+
+number_certificate_dialog = Dialog(
+    Window(
+        Const('Номер сертификата'),
+        Format('Выбранные фильтры: {settings}'),
+        TextInput(
+            id='choise_number_certificate',
+            type_factory=is_text,
+            on_success=correct_certificate,
+            on_error=error_certificate
+        ),
+        Button(text=Const('Очистить фильтры'),
+                   id='clear_filters_13',
+                   on_click=clear_filters),
+        Button(text=Const('Назад'),
+                id='back',
+                on_click=back),
+        state=NumberCertificate.choise_number_certificate,
+        getter=get_selected_number_catertificates
+    )
+    
 )

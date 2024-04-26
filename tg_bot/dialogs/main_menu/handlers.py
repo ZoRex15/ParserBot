@@ -4,32 +4,37 @@ from aiogram_dialog.widgets.input import ManagedTextInput, MessageInput
 from aiogram_dialog.widgets.kbd import Button
 from aiogram.types import FSInputFile
 
+from tg_bot.service import Database
 
-from service.service import Database
+from tg_bot.states import SettingsSG, StartParsingSG, MainMenuSG
 
-from states import SettingsSG, StartParsingSG, MainMenuSG
+from tg_bot.states import SettingsSG, StartParsingSG, MainMenuSG
 
-from tg_bot.parser import pars_cert, pars_decl
-from tg_bot.dto import FiltersDTO
+from tg_bot.parser import parse_cert, parse_decl
 from datetime import date
 from typing import Any
-from config.config import load_config, Config
+from tg_bot.config.config import load_config, Config
+from tg_bot.dto import FiltersDTO
 import os
 import asyncio
 
 config: Config = load_config('tg_bot/.env')
 
 async def start_parsing(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
-    if callback.from_user.id in config.tg_bot.admin_ids:
-        await dialog_manager.start(state=StartParsingSG.input_requests)
-    else:
+    if callback.from_user.id not in config.tg_bot.admin_ids:
         await callback.answer(text='Недостаточно прав!')
-
+    else:
+        if button.widget_id == 'start_parsing_d':
+            await dialog_manager.start(state=StartParsingSG.input_requests, data={'pars_mode': 'decl'})
+        else:
+            await dialog_manager.start(state=StartParsingSG.input_requests, data={'pars_mode': 'cert'})
+            
 async def select_filters(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     await dialog_manager.start(state=SettingsSG.choiсe_settings)
 
 async def clear_all_filters(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
-    Database.clear_all_filters(user_id=callback.from_user.id)
+    db: Database = dialog_manager.middleware_data.get('db')
+    db.clear_all_filters(user_id=callback.from_user.id)
     await callback.answer('Фильтры были очищены')
 
 def check_count_requests(text: Any):
@@ -42,8 +47,9 @@ async def set_count_requests(
         dialog_manager: DialogManager,
         text: str
 ):  
+    db: Database = dialog_manager.middleware_data.get('db')
     answer_messsage = await message.answer('Статус парсинга: Запуск...')
-    parser_settings = Database.get_all_filters(
+    parser_settings = db.get_all_filters(
         user_id=message.from_user.id,
         mode='id'
     )
@@ -68,13 +74,20 @@ async def set_count_requests(
         end_date_max=end_date_max,
         end_date_min=end_date_min,
         count_requests=int(message.text),
-        row_sertificate=...
+        row_sertificate=parser_settings['Номер сертификата']
     )
-    path_to_file = pars_decl.parser(
-           Filters=filters,
-           user_id=message.from_user.id,
-           message_id=message.message_id
-    )
+    if dialog_manager.start_data['pars_mode'] == 'decl':
+        path_to_file = parse_decl(
+            Filters=filters,
+            user_id=message.from_user.id,
+            message_id=message.message_id
+        )
+    else:
+        path_to_file = parse_cert(
+            Filters=filters,
+            user_id=message.from_user.id,
+            message_id=message.message_id
+        )
     file = FSInputFile(path=path_to_file)
     await message.bot.send_document(
         chat_id=message.from_user.id,

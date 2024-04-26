@@ -1,6 +1,5 @@
 from aiogram import Router
 
-
 from .dialogs import (dialog_settings, 
                       dialog_status, 
                       type_of_declaration_dialog, 
@@ -12,7 +11,8 @@ from .dialogs import (dialog_settings,
                       a_single_list_of_products_of_the_russian_federation_dialog,
                       input_data_dialog,
                       groups_of_products_of_the_russian_federation_dialog,
-                      groups_of_products_of_the_eaeu_dialog)
+                      groups_of_products_of_the_eaeu_dialog,
+                      number_certificate_dialog)
 
 settings_router = Router()
 
@@ -28,5 +28,6 @@ settings_router.include_routers(
     a_single_list_of_products_of_the_russian_federation_dialog,
     input_data_dialog,
     groups_of_products_of_the_russian_federation_dialog,
-    groups_of_products_of_the_eaeu_dialog
+    groups_of_products_of_the_eaeu_dialog,
+    number_certificate_dialog
 )

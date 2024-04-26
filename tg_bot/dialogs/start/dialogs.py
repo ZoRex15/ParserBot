@@ -4,7 +4,7 @@ from aiogram_dialog.widgets.kbd import  Button, Column, Multiselect, Group
 
 from .handlers import go_to_main_menu
 from .getters import get_user_name
-from states import StartSG
+from tg_bot.states import StartSG
 
 
 start = Dialog(

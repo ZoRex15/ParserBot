@@ -5,7 +5,7 @@ from aiogram_dialog.widgets.input import TextInput, MessageInput
 
 from aiogram.types import ContentType
 
-from states import MainMenuSG, StartParsingSG
+from tg_bot.states import MainMenuSG, StartParsingSG
 from .handlers import (
     start_parsing, 
     select_filters, 
@@ -24,10 +24,10 @@ main_menu = Dialog(
         Format('{settings}'),
         
         Column(
-            Button(text=Const('Парсинг: '),
+            Button(text=Const('Парсинг: По дикларациям'),
                    id='start_parsing_d',
                    on_click=start_parsing),
-            Button(text=Const('Парсинг: '),
+            Button(text=Const('Парсинг: По сертификатам'),
                    id='start_parsing_c',
                    on_click=start_parsing),
             Button(text=Const('Выбрать фильтры'),
