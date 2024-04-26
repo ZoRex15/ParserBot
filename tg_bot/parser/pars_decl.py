@@ -154,18 +154,16 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
 
     headers['Authorization'] = token
     json_data = {
-        'size': Filters.count_requests,
+        'size': int(Filters.count_requests),
         'page': 0,
         'filter': {
-            'status': [
-            ],
+            'status': [],
             'idDeclType': [],
             'idCertObjectType': [],
             'idProductType': [],
             'idGroupRU': [],
             'idGroupEEU': [],
-            'idTechReg': [
-            ],
+            'idTechReg': [],
             'idApplicantType': [],
             'regDate': {
                 'minDate': None,
@@ -175,7 +173,13 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
                 'minDate': None,
                 'maxDate': None,
             },
-            'columnsSearch': [],
+            'columnsSearch': [
+                {
+                    'name': 'number',
+                    'search': Filters.row_sertificate,
+                    'type': 9,
+                },
+            ],
             'idProductOrigin': [],
             'idProductEEU': [],
             'idProductRU': [],
@@ -195,8 +199,7 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
                 'column': 'declDate',
                 'sort': 'DESC',
             },
-        ], #status: list = [],zayvitel: list = [],tech_reg: list = [],type_decl: list = [],type_obj_decl: list = [],proizhodenie_product: list = [],edini_perechen_product_eaes: list = [],
-           #edini_perechen_product_rf:list = [],reg_date_min: str = '',reg_date_max: str = '',end_date_min: str = '',end_date_max: str = '',group_product_rf: list = [],group_product_eaes: list = []
+        ],
     }
     json_data['filter']['status'].extend(Filters.status)
     json_data['filter']['idDeclType'].extend(Filters.type_decl)
@@ -212,9 +215,6 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
     json_data['filter']['regDate']['maxDate'] = Filters.reg_date_max
     json_data['filter']['endDate']['minDate'] = Filters.end_date_min
     json_data['filter']['endDate']['maxDate'] = Filters.end_date_max
-    json_data['filter']['columnsSearch'].extend({'search': Filters.row_sertificate,
-                                                 'name': "number",
-                                                 "type": 9})
 
     ua = UserAgent()
     headers['User-Agent'] = ua.random
