@@ -10,6 +10,7 @@ from loguru import logger
 
 from tg_bot.service.service import RabbitMQ
 from tg_bot.dto import FiltersDTO
+from tg_bot.parser.utils import convert_json_filter
 
 logger.add('decl.log', format="{time} {level} {message}", level='DEBUG', rotation='10 MB', compression='zip')
 
@@ -174,11 +175,6 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
                 'maxDate': None,
             },
             'columnsSearch': [
-                {
-                    'name': 'number',
-                    'search': Filters.row_sertificate,
-                    'type': 9,
-                },
             ],
             'idProductOrigin': [],
             'idProductEEU': [],
@@ -216,6 +212,11 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
     json_data['filter']['endDate']['minDate'] = Filters.end_date_min
     json_data['filter']['endDate']['maxDate'] = Filters.end_date_max
 
+    if Filters.row_sertificate:
+        dicts = convert_json_filter(Filters.row_sertificate)
+        json_data['filter']['columnsSearch'].extend(dicts)
+
+
     ua = UserAgent()
     headers['User-Agent'] = ua.random
     while True:
@@ -238,6 +239,7 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
             proxi = next(proxy)
             time.sleep(1)
             logger.info(f'error у поискового запроса {ex}')
+
     flattens = []
     chetchik = 0
     count_requests = Filters.count_requests

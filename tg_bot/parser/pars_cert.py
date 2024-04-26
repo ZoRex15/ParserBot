@@ -11,6 +11,7 @@ import traceback
 
 from tg_bot.dto import FiltersDTO
 from tg_bot.service.service import RabbitMQ
+from tg_bot.parser.utils import convert_json_filter
 
 logger.add('cert.log', format="{time} {level} {message}", level='DEBUG', rotation='10 MB', compression='zip')
 urllib3.disable_warnings()
@@ -167,8 +168,7 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
             'idProductType': [],
             'idGroupRU': [],
             'idGroupEEU': [],
-            'idTechReg': [
-            ],
+            'idTechReg': [],
             'idApplicantType': [],
             'regDate': {
                 'minDate': None,
@@ -178,13 +178,7 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
                 'minDate': None,
                 'maxDate': None,
             },
-            'columnsSearch': [
-                {
-                    'name': 'number',
-                    'search': Filters.row_sertificate,
-                    'type': 9,
-                },
-            ],
+            'columnsSearch': [],
             'idProductOrigin': [],
             'idProductEEU': [],
             'idProductRU': [],
@@ -221,6 +215,10 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
     json_data['filter']['endDate']['minDate'] = Filters.end_date_min
     json_data['filter']['endDate']['maxDate'] = Filters.end_date_max
 
+    if Filters.row_sertificate:
+        dicts = convert_json_filter(Filters.row_sertificate)
+        json_data['filter']['columnsSearch'].extend(dicts)
+
     ua = UserAgent()
     headers['User-Agent'] = ua.random
     while True:
@@ -235,6 +233,7 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
                     json=json_data,
                 proxies=proxy_ye,verify=False
             )
+
             logger.info(f'Поисковой запрос {response}')
             items = response.json().get('items',[])
             break
