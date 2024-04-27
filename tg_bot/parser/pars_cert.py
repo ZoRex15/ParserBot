@@ -1,6 +1,4 @@
 import datetime
-import requests
-from requests import Session
 import time
 from anti_useragent import UserAgent
 import xlsxwriter
@@ -8,6 +6,8 @@ import urllib3
 from loguru import logger
 from itertools import cycle
 import traceback
+import niquests
+
 
 from tg_bot.dto import FiltersDTO
 from tg_bot.service.service import RabbitMQ
@@ -65,6 +65,8 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
     with open('tg_bot/parser/proxy.txt','r',encoding='utf-8') as file:
         proxyy_ = list(map(lambda x: x.strip(), file.readlines()[1:]))
     proxy = cycle(proxyy_)
+
+    s = niquests.Session(resolver="doh+google://", multiplexed=True)
     def get_token():
         logger.info('запустили функцию для получения токена')
         start = time.perf_counter()
@@ -103,7 +105,7 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
                 proxi = next(proxy)
                 proxy_ye = dict(http=f'socks5://{proxi}',
                                 https=f'socks5://{proxi}')
-                response = requests.post('https://pub.fsa.gov.ru/login', cookies=cookies_token, headers=headers_token,
+                response = s.post('https://pub.fsa.gov.ru/login', cookies=cookies_token, headers=headers_token,
                                          json=json_data_token,proxies=proxy_ye)
                 token = response.headers.get('Authorization')
                 if token:
@@ -227,7 +229,7 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
             proxy_ye = dict(http=f'socks5://{proxi}',
                             https=f'socks5://{proxi}')
             logger.info(f"Делаем поисковой запрос с этим прокси {proxy_ye}")
-            response = requests.post(
+            response = s.post(
                     'https://pub.fsa.gov.ru/api/v1/rss/common/certificates/get',
                     headers=headers,
                     json=json_data,
@@ -243,8 +245,6 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
             logger.error('error у поискового запроса {ex}')
     flattens = []
     chetchik = 0
-    session = Session()
-    session.headers.update(headers)
     count_requests = Filters.count_requests
     def start(item):
         break_count = 0
@@ -321,7 +321,7 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
                 proxi = next(proxy)
                 proxy_ye = dict(http=f'socks5://{proxi}',
                                 https=f'socks5://{proxi}')
-                resp = session.get(f'https://pub.fsa.gov.ru/api/v1/rss/common/certificates/{id}', headers=headers,
+                resp = s.get(f'https://pub.fsa.gov.ru/api/v1/rss/common/certificates/{id}', headers=headers,
                                    verify=False, proxies=proxy_ye)  # Делаем запрос к продукту
                 resp = resp.json()
                 sert_id = resp.get('idCertScheme')
@@ -428,7 +428,7 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
                 headers['Authorization'] = token
                 proxi = next(proxy)
                 proxy_ye = dict(http=f'socks5://{proxi}', https=f'socks5://{proxi}')
-                mult_resp = session.post('https://pub.fsa.gov.ru/nsi/api/multi', headers=headers,
+                mult_resp = s.post('https://pub.fsa.gov.ru/nsi/api/multi', headers=headers,
                                          json=json_data_mult, verify=False, proxies=proxy_ye)
                 mult_resp = mult_resp.json()
                 tnved_no = [] if mult_resp.get('tnved') is None else mult_resp.get('tnved')
@@ -479,12 +479,12 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
                     message_id=message_id,
                     message=f'{chetchik}/{count_requests}'
                 )
-                time.sleep(0.5)
+                time.sleep(0.25)
                 break
             except Exception as ex:
                 logger.error(f'Ошибка при парсинге сертификата {ex}')
                 proxi = next(proxy)
-                time.sleep(3)
+                time.sleep(1)
                 break_count += 1
                 if break_count >= 30:
                     break
