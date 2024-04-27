@@ -463,12 +463,12 @@ def parser(user_id: int, message_id: int, Filters: FiltersDTO):
                     message_id=message_id,
                     message=f'{chetchik}/{count_requests}'
                 )
-                time.sleep(0.5)
+                time.sleep(0.25)
                 break
             except Exception as ex:
                 logger.error(f'Ошибка при запросе и парсинге декларации {ex}')
                 proxi = next(proxy)
-                time.sleep(3)
+                time.sleep(1)
                 break_count += 1
                 if break_count >= 30:
                     break
