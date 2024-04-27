@@ -48,7 +48,7 @@ async def set_count_requests(
         text: str
 ):  
     db: Database = dialog_manager.middleware_data.get('db')
-    answer_messsage = await message.answer('Статус парсинга: Запуск...')
+    answer_message = await message.answer('Статус парсинга: Запуск...')
     parser_settings = db.get_all_filters(
         user_id=message.from_user.id,
         mode='id'
@@ -86,7 +86,7 @@ async def set_count_requests(
         path_to_file = parse_cert(
             Filters=filters,
             user_id=message.from_user.id,
-            message_id=message.message_id
+            message_id=answer_message.message_id
         )
     file = FSInputFile(path=path_to_file)
     await message.bot.send_document(

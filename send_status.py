@@ -8,6 +8,7 @@ config: Config = load_config('tg_bot/.env')
 
         
 async def main():
+    print(config.tg_bot.token)
     bot = Bot(config.tg_bot.token)
     connect = await aio_pika.connect_robust(host='localhost')
     queue_name = 'requests'
