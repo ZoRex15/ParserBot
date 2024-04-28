@@ -4,7 +4,7 @@ def convert_json_filter(querys: list[str]) -> list[dict]:
     for row_sertificate in querys:
         dicts.append(
             {
-        'name': 'number',
+        'column': 'number',
         'search': row_sertificate,
         'type': 9,
     }
