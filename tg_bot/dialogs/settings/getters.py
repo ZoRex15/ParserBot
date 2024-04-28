@@ -24,7 +24,7 @@ async def get_type_of_declaration_settings(event_from_user: User, dialog_manager
 async def get_type_of_object_declaration_settings(event_from_user: User, dialog_manager: DialogManager, **kwargs):
     db: Database = dialog_manager.middleware_data.get('db')
     selected_filters = db.get_filters(user_id=event_from_user.id,
-                                            setting_name='Тип объекта декларирования')
+                                            setting_name='Тип объекта декларации')
     return {'filters': [(text, id) for id, text in TYPE_OF_OBJECT_DECLARATION.items()],
             'settings': selected_filters}
 

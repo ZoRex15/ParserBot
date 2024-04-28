@@ -133,7 +133,7 @@ async def set_type_of_object_declaration(callback: CallbackQuery, widget: Select
                              dialog_manager: DialogManager, item_id: str):
     db: Database = dialog_manager.middleware_data.get('db')
     db.set_filter(user_id=callback.from_user.id,
-                        setting_name='Тип объекта декларирования',
+                        setting_name='Тип объекта декларации',
                         filter=TYPE_OF_OBJECT_DECLARATION[item_id],
                         filter_id=item_id)
     await callback.answer(text=TYPE_OF_OBJECT_DECLARATION[item_id])
